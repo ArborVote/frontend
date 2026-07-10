@@ -127,36 +127,6 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         );
       }
 
-      // The contract's leaf bookkeeping can drop leaves (removeByValue bisects an
-      // unsorted array - see the findings list in the project TODO.md), which would
-      // hide whole subtrees. Argument IDs are sequential, so detect and backfill.
-      const [, argumentsCount] = (await client.readContract({
-        address,
-        abi,
-        functionName: 'debates',
-        args: [id],
-      })) as [number, number];
-      if (fetched.size < argumentsCount) {
-        console.warn(
-          `Debate ${debateId}: traversal reached ${fetched.size} of ${argumentsCount} arguments; ` +
-            'the on-chain leaf list is incomplete. Backfilling by ID.',
-        );
-        const missing = Array.from({ length: argumentsCount }, (_, i) => i).filter(
-          (argumentId) => !fetched.has(argumentId),
-        );
-        const results = (await Promise.all(
-          missing.map((argumentId) =>
-            client.readContract({
-              address,
-              abi,
-              functionName: 'getArgument',
-              args: [id, argumentId],
-            }),
-          ),
-        )) as OnChainArgument[];
-        missing.forEach((argumentId, i) => fetched.set(argumentId, results[i]));
-      }
-
       const nodes: ArgumentNode[] = (
         await Promise.all(
           [...fetched.entries()]
