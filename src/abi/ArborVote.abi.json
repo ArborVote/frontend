@@ -282,7 +282,7 @@
         "internalType": "uint48"
       },
       {
-        "name": "votingEndTime",
+        "name": "ratingEndTime",
         "type": "uint48",
         "internalType": "uint48"
       },

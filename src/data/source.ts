@@ -15,7 +15,7 @@ const PHASE_BY_STATUS: Record<number, Phase> = {
   1: 'editing',
   2: 'rating',
   3: 'tallying',
-  4: 'tallied',
+  4: 'finished',
 };
 
 interface OnChainArgument {

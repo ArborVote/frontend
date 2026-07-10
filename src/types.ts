@@ -1,6 +1,6 @@
 export type Side = 'pro' | 'con';
 
-export type Phase = 'editing' | 'rating' | 'tallying' | 'tallied';
+export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
 
 /** A node of the debate tree. The thesis is the node with `parentId: null`. */
 export interface ArgumentNode {
@@ -47,5 +47,5 @@ export const PHASE_LABEL: Record<Phase, string> = {
   editing: 'Editing phase',
   rating: 'Rating phase',
   tallying: 'Tallying phase',
-  tallied: 'Tallied',
+  finished: 'Finished',
 };
