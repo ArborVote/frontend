@@ -1,0 +1,454 @@
+/* ── Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --canvas: #f6f7f4;
+  --ink: #22301f;
+  --pro: #31703f;
+  --pro-wash: #edf4ec;
+  --con: #a5432c;
+  --con-wash: #f7eee9;
+  --bark: #7a7568;
+  --hairline: #e3e6de;
+  --card: #ffffff;
+
+  --font-display: 'Fraunces', 'Iowan Old Style', georgia, serif;
+  --font-body: 'Public Sans', 'Helvetica Neue', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--card);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+.topbar-spacer {
+  flex: 1;
+}
+
+.phase {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  color: var(--bark);
+}
+
+.phase-rating {
+  color: var(--pro);
+  border-color: var(--pro);
+}
+
+/* ── Wallet ──────────────────────────────────────────────────────────── */
+.wallet {
+  position: relative;
+}
+
+.wallet-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.wallet-button:hover {
+  background: var(--canvas);
+}
+
+.wallet-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--pro);
+}
+
+.wallet-address {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+.wallet-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 15rem;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(34, 48, 31, 0.12);
+  padding: 0.4rem;
+  z-index: 10;
+}
+
+.wallet-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 500;
+}
+
+.wallet-menu-item:hover {
+  background: var(--canvas);
+}
+
+.wallet-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.25rem;
+}
+
+.wallet-menu-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--bark);
+}
+
+/* ── Debate layout ───────────────────────────────────────────────────── */
+.debate {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 4rem;
+}
+
+.load-note,
+.load-error {
+  max-width: 64rem;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  color: var(--bark);
+}
+
+.load-error {
+  color: var(--con);
+}
+
+/* ── Ancestry rail (signature) ───────────────────────────────────────── */
+.rail {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 0.85rem;
+}
+
+.rail-step {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  line-height: 1.35;
+}
+
+.rail-node {
+  border: 0;
+  background: none;
+  padding: 0.1rem 0.2rem;
+  color: var(--bark);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--hairline);
+  text-underline-offset: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rail-node:hover {
+  color: var(--ink);
+  text-decoration-color: var(--bark);
+}
+
+.rail-connector {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.rail-pro {
+  color: var(--pro);
+}
+
+.rail-con {
+  color: var(--con);
+}
+
+/* ── Focused claim ───────────────────────────────────────────────────── */
+.focus {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  border-top: 4px solid var(--ink);
+}
+
+.focus-pro {
+  border-top-color: var(--pro);
+}
+
+.focus-con {
+  border-top-color: var(--con);
+}
+
+.focus-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bark);
+}
+
+.focus-thesis .focus-kicker {
+  color: var(--ink);
+}
+
+.focus-pro .focus-kicker {
+  color: var(--pro);
+}
+
+.focus-con .focus-kicker {
+  color: var(--con);
+}
+
+.focus-text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.focus-meta {
+  margin: 0.75rem 0 0;
+  color: var(--bark);
+  font-size: 0.85rem;
+}
+
+/* ── Columns ─────────────────────────────────────────────────────────── */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  animation: settle 160ms ease-out;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0.4;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .columns {
+    animation: none;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.column-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid;
+}
+
+.column-pro .column-title {
+  color: var(--pro);
+  border-color: var(--pro);
+}
+
+.column-con .column-title {
+  color: var(--con);
+  border-color: var(--con);
+}
+
+.column-empty {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--hairline);
+  border-radius: 0.75rem;
+  color: var(--bark);
+  font-size: 0.85rem;
+}
+
+/* ── Argument cards ──────────────────────────────────────────────────── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-left-width: 4px;
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+.card-pro {
+  border-left-color: var(--pro);
+}
+
+.card-pro:hover {
+  border-color: var(--pro);
+  background: var(--pro-wash);
+}
+
+.card-con {
+  border-left-color: var(--con);
+}
+
+.card-con:hover {
+  border-color: var(--con);
+  background: var(--con-wash);
+}
+
+.card-text {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card-replies {
+  font-size: 0.78rem;
+  color: var(--bark);
+  white-space: nowrap;
+}
+
+/* ── Approval gauge ──────────────────────────────────────────────────── */
+.gauge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.gauge-bar {
+  width: 5.5rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #e3cabe; /* redwood tint strong enough to read as the con share on white */
+  overflow: hidden;
+  flex: none;
+}
+
+.gauge-pro {
+  display: block;
+  height: 100%;
+  background: var(--pro);
+  border-radius: 999px;
+}
+
+.gauge-figures {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--bark);
+  white-space: nowrap;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 44rem) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .debate {
+    padding: 1rem 1rem 3rem;
+  }
+
+  .focus {
+    padding: 1.1rem 1.25rem;
+  }
+}

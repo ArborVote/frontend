@@ -1,0 +1,297 @@
+[
+  {
+    "type": "function",
+    "name": "addArgument",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "parentArgumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "contentURI",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "isSupporting",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "initialApproval",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "newArgumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "debates",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "totalVotes",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "argumentsCount",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getArgument",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "argument",
+        "type": "tuple",
+        "internalType": "struct Argument.Data",
+        "components": [
+          {
+            "name": "contentURI",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "creator",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "isSupporting",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "state",
+            "type": "uint8",
+            "internalType": "enum Argument.State"
+          },
+          {
+            "name": "parentArgumentId",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "untalliedChilds",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "finalizationTime",
+            "type": "uint48",
+            "internalType": "uint48"
+          },
+          {
+            "name": "pro",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "proIssued",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "con",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "conIssued",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "votes",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fees",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "childsVote",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "childsImpact",
+            "type": "int64",
+            "internalType": "int64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getLeafArgumentIds",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "leafArgumentIds",
+        "type": "uint16[]",
+        "internalType": "uint16[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "investInCon",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "investInPro",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "join",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "outcome",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "approved",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "phases",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "currentPhase",
+        "type": "uint8",
+        "internalType": "enum Phase.Status"
+      },
+      {
+        "name": "editingEndTime",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "votingEndTime",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "timeUnit",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "stateMutability": "view"
+  }
+]
