@@ -148,6 +148,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
           editingEndTime: Number(editingEndTime),
           ratingEndTime: Number(ratingEndTime),
           chainTime,
+          loadedAt: Math.floor(Date.now() / 1000),
         },
         approved,
       };
@@ -258,6 +259,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
           ratingEndTime: Number(debate.ratingEndTime),
           // Same estimate as the contract source: at least the head, at least the wall.
           chainTime: Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000)),
+          loadedAt: Math.floor(Date.now() / 1000),
         },
         approved: debate.approved ?? undefined,
       };

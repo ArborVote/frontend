@@ -1,7 +1,7 @@
 import { formatImpact, IMPACT_HINT } from '../lib/impact';
 import { formatDuration } from '../lib/time';
 import type { ArgumentNode, Debate } from '../types';
-import { childrenOf } from '../types';
+import { childrenOf, liveChainTime } from '../types';
 
 function ApprovalGauge({ approval, weight }: { approval: number; weight: number }) {
   const percent = Math.round(approval * 100);
@@ -42,7 +42,7 @@ export function ArgumentCard({
   // Time until the draft can be locked in; null without a chain clock (sample data).
   const finalizesIn =
     node.state === 'created' && debate.timing
-      ? node.finalizationTime - Math.max(now, debate.timing.chainTime)
+      ? node.finalizationTime - liveChainTime(debate.timing, now)
       : null;
   const replies = [
     pros > 0 ? `${pros} pro` : null,

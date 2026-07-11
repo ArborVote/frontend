@@ -37,6 +37,18 @@ export interface DebateTiming {
    * on-chain instead of trusting it.
    */
   chainTime: number;
+  /** The wall time at which this estimate was taken, letting it advance between reloads. */
+  loadedAt: number;
+}
+
+/**
+ * The chain-clock estimate at wall time `now`: the load-time estimate advanced
+ * by the wall time elapsed since. Time-warped dev chains run ahead of the wall
+ * but still advance in real time, so the elapsed wall time carries the estimate
+ * between reloads; the wall itself stays a floor.
+ */
+export function liveChainTime(timing: DebateTiming, now: number): number {
+  return Math.max(now, timing.chainTime + Math.max(0, now - timing.loadedAt));
 }
 
 export interface Debate {
@@ -57,15 +69,15 @@ export interface PhasePoke {
 }
 
 /**
- * The phase poke currently open on the debate, if any. `atTime` (unix seconds,
- * typically a ticking wall clock) lets the gate open live between reloads;
- * the load-time chain estimate is always honored as a lower bound.
+ * The phase poke currently open on the debate, if any. `now` (wall unix
+ * seconds, typically a ticking clock) lets the gate open live between reloads
+ * via the advancing chain-time estimate.
  */
-export function availablePhasePoke(debate: Debate, atTime?: number): PhasePoke | null {
+export function availablePhasePoke(debate: Debate, now?: number): PhasePoke | null {
   if (debate.phase === 'tallying') return { kind: 'tally', target: 'finished' };
   if (!debate.timing) return null;
-  const { chainTime, editingEndTime, ratingEndTime } = debate.timing;
-  const time = Math.max(chainTime, atTime ?? 0);
+  const { editingEndTime, ratingEndTime } = debate.timing;
+  const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
   const stuckInEditing = debate.phase === 'editing';
   const stuckInRating = stuckInEditing || debate.phase === 'rating';
   if (stuckInRating && time > ratingEndTime) return { kind: 'advance', target: 'tallying' };
@@ -73,14 +85,13 @@ export function availablePhasePoke(debate: Debate, atTime?: number): PhasePoke |
   return null;
 }
 
-/** Whether the permissionless finalize poke is open for this argument (`atTime` as above). */
-export function finalizable(node: ArgumentNode, debate: Debate, atTime?: number): boolean {
-  return (
-    node.state === 'created' &&
-    debate.phase !== 'finished' &&
-    debate.timing !== undefined &&
-    Math.max(debate.timing.chainTime, atTime ?? 0) >= node.finalizationTime
-  );
+/** Whether the permissionless finalize poke is open for this argument (`now` as above). */
+export function finalizable(node: ArgumentNode, debate: Debate, now?: number): boolean {
+  if (node.state !== 'created' || debate.phase === 'finished' || debate.timing === undefined) {
+    return false;
+  }
+  const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
+  return time >= node.finalizationTime;
 }
 
 export function thesisOf(debate: Debate): ArgumentNode {

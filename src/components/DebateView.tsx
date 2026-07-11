@@ -3,7 +3,7 @@ import type { ArgumentPosition } from '../data/actions';
 import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { Debate, Side } from '../types';
-import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
+import { ancestryOf, childrenOf, finalizable, liveChainTime, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
@@ -157,7 +157,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             eligible={finalizable(focus, debate, now)}
             opensIn={
               debate.timing
-                ? Math.max(0, focus.finalizationTime - Math.max(now, debate.timing.chainTime))
+                ? Math.max(0, focus.finalizationTime - liveChainTime(debate.timing, now))
                 : undefined
             }
             onFinalize={() => tx.finalize(focus.id)}

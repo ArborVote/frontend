@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { ArgumentNode, Debate, DebateTiming, Phase } from './types';
 import { availablePhasePoke, finalizable } from './types';
 
-const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0 };
+const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0, loadedAt: 0 };
 
 function debate(phase: Phase, timing?: DebateTiming): Debate {
   return { id: 0, phase, nodes: [], timing };
@@ -55,14 +55,18 @@ describe('availablePhasePoke', () => {
     expect(availablePhasePoke(debate('rating'))).toBeNull();
   });
 
-  test('opens live on a ticking clock, keeping the load-time chain estimate as the floor', () => {
-    const stale = debate('editing', { ...TIMING, chainTime: 600 });
-    expect(availablePhasePoke(stale, 701)).toEqual({ kind: 'advance', target: 'rating' });
-    // A clock behind the chain estimate (time-warped dev chain) never closes the gate again.
-    expect(availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701 }), 100)).toEqual({
-      kind: 'advance',
-      target: 'rating',
-    });
+  test('opens live as the chain-time estimate advances between reloads', () => {
+    // Loaded at wall 50 with the chain clock estimated at 600 (a time-warped
+    // dev chain far ahead of the wall): 101 s of wall time later the gate opens.
+    const stale = debate('editing', { ...TIMING, chainTime: 600, loadedAt: 50 });
+    expect(availablePhasePoke(stale, 149)).toBeNull();
+    expect(availablePhasePoke(stale, 151)).toEqual({ kind: 'advance', target: 'rating' });
+  });
+
+  test('never closes again on a wall clock running behind the load-time estimate', () => {
+    expect(
+      availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701, loadedAt: 1000 }), 100),
+    ).toEqual({ kind: 'advance', target: 'rating' });
   });
 });
 
@@ -86,8 +90,9 @@ describe('finalizable', () => {
     expect(finalizable(node('created', 0), debate('editing'))).toBe(false);
   });
 
-  test('opens live on a ticking clock, keeping the load-time chain estimate as the floor', () => {
-    expect(finalizable(node('created', 501), live, 501)).toBe(true);
-    expect(finalizable(node('created', 500), live, 100)).toBe(true);
+  test('opens live as the chain-time estimate advances between reloads', () => {
+    const stale = debate('editing', { ...TIMING, chainTime: 400, loadedAt: 100 });
+    expect(finalizable(node('created', 500), stale, 199)).toBe(false);
+    expect(finalizable(node('created', 500), stale, 200)).toBe(true);
   });
 });
