@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import type { Side } from '../types';
 
-/** Rating controls for the focused argument: invest vote tokens into its pro or con side. */
+/**
+ * Rating controls for the focused argument: stake vote tokens on it being under-
+ * or overrated. Stance-free on purpose - one can agree with an argument and still
+ * call it overrated. Underneath, the stake buys pro or con shares of its market.
+ */
 export function InvestPanel({
   tokens,
   onInvest,
@@ -16,7 +20,7 @@ export function InvestPanel({
 
   const invalid = !Number.isInteger(amount) || amount < 1 || amount > tokens;
 
-  const invest = async (side: Side) => {
+  const stake = async (side: Side) => {
     setBusy(side);
     setError(null);
     try {
@@ -32,7 +36,7 @@ export function InvestPanel({
     <div className="action-panel">
       <div className="action-row">
         <label className="action-amount">
-          Invest
+          Stake
           <input
             type="number"
             min={1}
@@ -45,20 +49,23 @@ export function InvestPanel({
         <button
           type="button"
           className="btn btn-pro"
-          onClick={() => invest('pro')}
+          onClick={() => stake('pro')}
           disabled={busy !== null || invalid}
         >
-          {busy === 'pro' ? 'Investing…' : 'Invest pro'}
+          {busy === 'pro' ? 'Staking…' : 'Underrated ↑'}
         </button>
         <button
           type="button"
           className="btn btn-con"
-          onClick={() => invest('con')}
+          onClick={() => stake('con')}
           disabled={busy !== null || invalid}
         >
-          {busy === 'con' ? 'Investing…' : 'Invest con'}
+          {busy === 'con' ? 'Staking…' : 'Overrated ↓'}
         </button>
-        <span className="action-hint">5% fee goes to the argument's creator</span>
+        <span className="action-hint">
+          You profit if the rating corrects your way once the debate ends · 5% fee to the
+          argument's creator
+        </span>
       </div>
       {error && <p className="action-error">{error}</p>}
     </div>
