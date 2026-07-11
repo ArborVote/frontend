@@ -95,6 +95,8 @@ export function MiniTree({
     ]),
   );
 
+  // An edge inherits its child's tier; along the ancestry path it darkens and
+  // thickens in the step's polarity color, mirroring the ancestry rail.
   const connectors = placements
     .filter(({ node }) => node.parentId !== null)
     .map(({ node }) => {
@@ -103,9 +105,12 @@ export function MiniTree({
       const fromX = from.x + NODE_W / 2;
       const fromY = from.y + NODE_H;
       const toX = to.x + NODE_W / 2;
+      const tier = emphasis.get(node.id)!;
       return {
         id: node.id,
-        faded: emphasis.get(node.id) === 'faded',
+        onPath: tier === 'focus' || tier === 'path',
+        faded: tier === 'faded',
+        color: fillOf(node),
         d: `M ${fromX} ${fromY} C ${fromX} ${fromY + V_GAP / 2}, ${toX} ${to.y - V_GAP / 2}, ${toX} ${to.y}`,
       };
     });
@@ -123,7 +128,10 @@ export function MiniTree({
         {connectors.map((connector) => (
           <path
             key={connector.id}
-            className={`minitree-edge ${connector.faded ? 'minitree-faded' : ''}`}
+            className={`minitree-edge ${connector.onPath ? 'minitree-edge-path' : ''} ${
+              connector.faded ? 'minitree-faded' : ''
+            }`}
+            style={connector.onPath ? { stroke: connector.color } : undefined}
             d={connector.d}
           />
         ))}

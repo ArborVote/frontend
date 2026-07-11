@@ -195,6 +195,11 @@ button {
   stroke-width: 1.25;
 }
 
+/* The path to the focused argument, darkened in each step's polarity color. */
+.minitree-edge-path {
+  stroke-width: 2;
+}
+
 .minitree-node {
   stroke-width: 1.25;
   cursor: pointer;
