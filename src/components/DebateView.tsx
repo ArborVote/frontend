@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
+import { formatImpact, impactsOf } from '../lib/impact';
 import type { Debate, Side } from '../types';
 import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
 import { ArgumentCard } from './ArgumentCard';
@@ -66,6 +67,8 @@ function AncestryRail({
   );
 }
 
+const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : '');
+
 export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
@@ -75,6 +78,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const pros = childrenOf(debate, focus.id, 'pro');
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
+
+  // Live preview of the tally during the rating, the mirrored result afterwards.
+  const impacts = debate.phase === 'editing' ? null : impactsOf(debate);
+  const focusImpact = impacts?.get(focus.id);
+  const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
   // Replying requires a final parent, so no composer under a draft focus.
   const authoring = tx !== null && tx.joined && debate.phase === 'editing' && focus.state === 'final';
@@ -92,11 +100,42 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
         </p>
         <h1 className="focus-text">{focus.text}</h1>
-        <p className="focus-meta">
-          Market approval{' '}
-          <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
-          <strong className="mono">{focus.weight} ⬡</strong>
-        </p>
+        {isThesis && debate.phase === 'finished' && debate.approved !== undefined && (
+          <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
+            {debate.approved ? 'Thesis confirmed ✓' : 'Thesis objected ✗'}
+            {focusImpact !== undefined && (
+              <>
+                {' '}
+                · net impact <strong className="mono">{formatImpact(focusImpact)}</strong>
+              </>
+            )}
+          </p>
+        )}
+        {isThesis ? (
+          <p className="focus-meta">
+            Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
+            {debate.phase !== 'finished' && focusImpact !== undefined && (
+              <>
+                {' '}
+                · net impact{' '}
+                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="focus-meta">
+            Market approval{' '}
+            <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
+            <strong className="mono">{focus.weight} ⬡</strong>
+            {focusImpact !== undefined && (
+              <>
+                {' '}
+                · impact{' '}
+                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
+              </>
+            )}
+          </p>
+        )}
         {draft && tx && (
           <FinalizePanel
             key={focus.id}
@@ -127,7 +166,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             </p>
           ) : (
             pros.map((node) => (
-              <ArgumentCard key={node.id} debate={debate} node={node} onFocus={setFocusedId} />
+              <ArgumentCard
+                key={node.id}
+                debate={debate}
+                node={node}
+                impact={impacts?.get(node.id)}
+                onFocus={setFocusedId}
+              />
             ))
           )}
           {authoring && tx && (
@@ -148,7 +193,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             </p>
           ) : (
             cons.map((node) => (
-              <ArgumentCard key={node.id} debate={debate} node={node} onFocus={setFocusedId} />
+              <ArgumentCard
+                key={node.id}
+                debate={debate}
+                node={node}
+                impact={impacts?.get(node.id)}
+                onFocus={setFocusedId}
+              />
             ))
           )}
           {authoring && tx && (

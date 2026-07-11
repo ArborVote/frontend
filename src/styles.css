@@ -461,6 +461,37 @@ button {
   color: var(--bark);
 }
 
+.card-impact {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--bark);
+}
+
+/* Impact signs: green pushes the parent up, red pulls it down. */
+.impact-pos {
+  color: var(--pro);
+}
+
+.impact-neg {
+  color: var(--con);
+}
+
+/* ── Verdict (thesis, once finished) ─────────────────────────────────── */
+.verdict {
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.verdict-approved {
+  color: var(--pro);
+}
+
+.verdict-objected {
+  color: var(--con);
+}
+
 /* ── Approval gauge ──────────────────────────────────────────────────── */
 .gauge {
   display: flex;

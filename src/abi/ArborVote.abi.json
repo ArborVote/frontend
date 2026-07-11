@@ -249,7 +249,7 @@
             "internalType": "uint32"
           },
           {
-            "name": "childsImpact",
+            "name": "descendantsImpact",
             "type": "int64",
             "internalType": "int64"
           }

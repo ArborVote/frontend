@@ -1,3 +1,4 @@
+import { formatImpact } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf } from '../types';
 
@@ -22,10 +23,13 @@ function ApprovalGauge({ approval, weight }: { approval: number; weight: number 
 export function ArgumentCard({
   debate,
   node,
+  impact,
   onFocus,
 }: {
   debate: Debate;
   node: ArgumentNode;
+  /** The argument's tally impact on its parent; absent while the debate is still being edited. */
+  impact?: number;
   onFocus: (id: number) => void;
 }) {
   const pros = childrenOf(debate, node.id, 'pro').length;
@@ -40,6 +44,14 @@ export function ArgumentCard({
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <ApprovalGauge approval={node.approval} weight={node.weight} />
+        {impact !== undefined && (
+          <span
+            className={`card-impact ${impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : ''}`}
+            title="Impact on the parent argument"
+          >
+            {formatImpact(impact)}
+          </span>
+        )}
         {node.state === 'created' && (
           <span className="card-draft" title="Not final yet - still editable, not yet tradeable">
             draft

@@ -40,6 +40,8 @@ export interface Debate {
   nodes: ArgumentNode[];
   /** Absent for bundled sample data, which has no chain to poke. */
   timing?: DebateTiming;
+  /** Whether the debate confirmed the thesis. Only set once the phase is `finished`. */
+  approved?: boolean;
 }
 
 /** A permissionless phase transition that is currently open for anyone to trigger. */

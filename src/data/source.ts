@@ -132,15 +132,22 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         .filter((node) => node.rawState !== 0)
         .map(({ rawState: _rawState, ...node }) => node);
 
+      const phase = PHASE_BY_STATUS[currentPhase] ?? 'editing';
+      const approved =
+        phase === 'finished'
+          ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
+          : undefined;
+
       return {
         id: debateId,
-        phase: PHASE_BY_STATUS[currentPhase] ?? 'editing',
+        phase,
         nodes,
         timing: {
           editingEndTime: Number(editingEndTime),
           ratingEndTime: Number(ratingEndTime),
           chainTime,
         },
+        approved,
       };
     },
   };
@@ -158,6 +165,7 @@ export interface IndexedDebateRow {
   phase: string;
   editingEndTime: string;
   ratingEndTime: string;
+  approved: boolean | null;
 }
 
 export interface IndexedArgumentRow {
@@ -190,7 +198,7 @@ export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
-  Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime }
+  Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime approved }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI state finalizationTime pro con votes
   }
@@ -246,6 +254,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
           // Same estimate as the contract source: at least the head, at least the wall.
           chainTime: Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000)),
         },
+        approved: debate.approved ?? undefined,
       };
     },
   };
