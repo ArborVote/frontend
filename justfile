@@ -17,6 +17,10 @@ dev:
 dev-anvil:
     bun scripts/dev-anvil.ts
 
+# Sync the app ABI from the contracts build artifact
+sync-abi:
+    bun scripts/sync-abi.ts
+
 # Run the unit tests (includes a kubo round-trip when the node is up)
 test:
     bun test
