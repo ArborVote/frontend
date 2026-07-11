@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { formatImpact, impactsOf } from '../lib/impact';
+import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { Debate, Side } from '../types';
 import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
@@ -106,10 +106,10 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
             {debate.approved ? 'Thesis confirmed ✓' : 'Thesis objected ✗'}
             {focusImpact !== undefined && (
-              <>
+              <span title={NET_IMPACT_HINT}>
                 {' '}
-                · net impact <strong className="mono">{formatImpact(focusImpact)}</strong>
-              </>
+                · net sway <strong className="mono">{formatImpact(focusImpact)}</strong>
+              </span>
             )}
           </p>
         )}
@@ -117,11 +117,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           <p className="focus-meta">
             Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
             {debate.phase !== 'finished' && focusImpact !== undefined && (
-              <>
+              <span title={NET_IMPACT_HINT}>
                 {' '}
-                · net impact{' '}
+                · net sway{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-              </>
+              </span>
             )}
           </p>
         ) : (
@@ -130,11 +130,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
             <strong className="mono">{focus.weight} ⬡</strong>
             {focusImpact !== undefined && (
-              <>
+              <span title={IMPACT_HINT}>
                 {' '}
-                · impact{' '}
+                · sways parent{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-              </>
+              </span>
             )}
           </p>
         )}

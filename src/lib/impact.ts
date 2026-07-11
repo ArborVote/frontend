@@ -35,6 +35,16 @@ export function impactsOf(debate: Debate): Map<number, number> {
   return impacts;
 }
 
+/** The tooltip explaining an argument's impact figure, shared by every place it appears. */
+export const IMPACT_HINT =
+  "How much this argument sways its parent's rating in the tally: its own rating blended " +
+  'with what its sub-arguments add, weighted by its share of the stake among its siblings. ' +
+  'Green sways the parent up, red down.';
+
+/** The tooltip explaining the thesis' net impact figure. */
+export const NET_IMPACT_HINT =
+  "The sum of the top-level arguments' sways: above zero the thesis is confirmed, below it is objected.";
+
 /** Formats an impact fraction as a signed percentage, e.g. "+12%". */
 export function formatImpact(impact: number): string {
   const percent = Math.round(impact * 100);

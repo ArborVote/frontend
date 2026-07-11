@@ -1,4 +1,4 @@
-import { formatImpact } from '../lib/impact';
+import { formatImpact, IMPACT_HINT } from '../lib/impact';
 import { formatDuration } from '../lib/time';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf } from '../types';
@@ -57,7 +57,7 @@ export function ArgumentCard({
         {impact !== undefined && (
           <span
             className={`card-impact ${impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : ''}`}
-            title="Impact on the parent argument"
+            title={IMPACT_HINT}
           >
             {formatImpact(impact)}
           </span>
