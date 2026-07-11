@@ -53,7 +53,7 @@ just ipfs-down   # stop it
 
 `dev-anvil.ts` starts the node, publishes the seed content through the same pipeline, and writes both `VITE_IPFS_GATEWAY` and `VITE_IPFS_API` into `.env.local`.
 
-**Production pinning strategy.** Argument texts are tiny immutable blocks whose digests are public on-chain, so availability has three legs: (1) at authoring time the client publishes to the deployment's `VITE_IPFS_API` — a kubo node or cluster the operator runs behind an origin-restricted, authenticated proxy; (2) any party can audit and re-pin content from the on-chain digests — the planned event indexer re-pins everything it sees, acting as the availability backstop; (3) the inline-decode fallback keeps short payloads readable with no IPFS at all. Because reads are digest-verified, *any* gateway — public or private — is safe to resolve through; a gateway can at worst withhold content, never forge it.
+**Production pinning strategy.** Argument texts are tiny immutable blocks whose digests are public on-chain, so availability has three legs: (1) at authoring time the client publishes to the deployment's `VITE_IPFS_API` — a kubo node or cluster the operator runs behind an origin-restricted, authenticated proxy; (2) any party can audit and re-pin content from the on-chain digests — the event indexer (`../indexer`, `ENVIO_PIN_IPFS_API`) re-pins everything it sees, acting as the availability backstop; (3) the inline-decode fallback keeps short payloads readable with no IPFS at all. Because reads are digest-verified, *any* gateway — public or private — is safe to resolve through; a gateway can at worst withhold content, never forge it.
 
 ## Wallets
 
