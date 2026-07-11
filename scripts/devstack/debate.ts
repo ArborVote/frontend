@@ -67,7 +67,15 @@ export function anvilAccount(index: number): HDAccount {
 }
 
 export function devChainClient(rpcUrl: string) {
-  return createTestClient({ chain: foundry, mode: 'anvil', transport: http(rpcUrl) })
+  // Fast polling, low cache: viem's block-number cache (default 4 s) would
+  // otherwise delay every receipt wait by a full cache window on a warm client.
+  return createTestClient({
+    chain: foundry,
+    mode: 'anvil',
+    transport: http(rpcUrl),
+    pollingInterval: 100,
+    cacheTime: 100,
+  })
     .extend(publicActions)
     .extend(walletActions);
 }

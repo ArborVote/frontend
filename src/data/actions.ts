@@ -65,7 +65,14 @@ export async function connectDebateActions(
   provider: EIP1193Provider,
   account: Address,
 ): Promise<DebateActions> {
-  const publicClient = createPublicClient({ transport: http(config.rpcUrl) });
+  // Fast polling, low cache: viem serves block numbers from a per-client cache
+  // (default 4 s), which would delay every receipt wait by a full cache window
+  // once the cache is warm - sequential transactions crawl on instant-mining chains.
+  const publicClient = createPublicClient({
+    transport: http(config.rpcUrl),
+    pollingInterval: 500,
+    cacheTime: 500,
+  });
   const chain = defineChain({
     id: await publicClient.getChainId(),
     name: 'debate chain',
