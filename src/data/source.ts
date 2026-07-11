@@ -146,8 +146,136 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
   };
 }
 
-/** Picks the contract source when configured via env, the sample debate otherwise. */
+const PHASE_BY_NAME: Record<string, Phase> = {
+  EDITING: 'editing',
+  RATING: 'rating',
+  TALLYING: 'tallying',
+  FINISHED: 'finished',
+};
+
+/** Raw indexer rows; Hasura serializes the BigInt fields as strings. */
+export interface IndexedDebateRow {
+  phase: string;
+  editingEndTime: string;
+  ratingEndTime: string;
+}
+
+export interface IndexedArgumentRow {
+  argumentId: string;
+  parent_id: string | null;
+  isSupporting: boolean | null;
+  contentURI: string;
+  state: string;
+  finalizationTime: string;
+  pro: string;
+  con: string;
+  votes: string;
+}
+
+/** Maps an indexer row to a debate node; the text still needs resolving from the contentURI. */
+export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text'> & { contentURI: Hex } {
+  const con = Number(row.con);
+  const marketSize = Number(row.pro) + con;
+  return {
+    id: Number(row.argumentId),
+    // Argument entity IDs are `{debateId}_{argumentId}`; the thesis has no parent.
+    parentId: row.parent_id === null ? null : Number(row.parent_id.split('_')[1]),
+    side: row.isSupporting === null ? null : row.isSupporting ? 'pro' : 'con',
+    contentURI: row.contentURI as Hex,
+    approval: marketSize === 0 ? 0.5 : con / marketSize,
+    weight: Number(row.votes),
+    state: row.state === 'CREATED' ? 'created' : 'final',
+    finalizationTime: Number(row.finalizationTime),
+  };
+}
+
+const INDEXER_QUERY = `query DebateTree($debateId: String!) {
+  Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime }
+  Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
+    argumentId parent_id isSupporting contentURI state finalizationTime pro con votes
+  }
+}`;
+
+/**
+ * Reads a debate from the indexer in one GraphQL query instead of RPC-traversing
+ * the tree leaf by leaf. The chain clock still comes from the RPC head block -
+ * the index carries no notion of "now".
+ */
+export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: string): DebateSource {
+  const client = createPublicClient({ transport: http(rpcUrl) });
+
+  return {
+    async load(debateId: number): Promise<Debate> {
+      const [response, latestBlock] = await Promise.all([
+        fetch(indexerUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ query: INDEXER_QUERY, variables: { debateId: String(debateId) } }),
+        }),
+        client.getBlock(),
+      ]);
+      if (!response.ok) {
+        throw new Error(`The indexer responded with status ${response.status}`);
+      }
+      const { data, errors } = (await response.json()) as {
+        data?: { Debate: IndexedDebateRow[]; Argument: IndexedArgumentRow[] };
+        errors?: Array<{ message: string }>;
+      };
+      if (errors?.length || !data) {
+        throw new Error(errors?.[0]?.message ?? 'The indexer returned no data');
+      }
+      const [debate] = data.Debate;
+      if (!debate) {
+        throw new Error(`Debate ${debateId} is not in the index (yet)`);
+      }
+
+      const nodes: ArgumentNode[] = await Promise.all(
+        data.Argument.map(async (row) => {
+          const { contentURI, ...node } = nodeFromIndex(row);
+          return { ...node, text: await contentToText(contentURI, ipfsGateway) };
+        }),
+      );
+
+      return {
+        id: debateId,
+        phase: PHASE_BY_NAME[debate.phase] ?? 'editing',
+        nodes,
+        timing: {
+          editingEndTime: Number(debate.editingEndTime),
+          ratingEndTime: Number(debate.ratingEndTime),
+          // Same estimate as the contract source: at least the head, at least the wall.
+          chainTime: Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000)),
+        },
+      };
+    },
+  };
+}
+
+/** Serves from the primary source, falling back (with a console note) when it fails. */
+export function withFallback(primary: DebateSource, fallback: DebateSource): DebateSource {
+  return {
+    async load(debateId: number): Promise<Debate> {
+      try {
+        return await primary.load(debateId);
+      } catch (cause) {
+        console.warn('Debate indexer unavailable - reading from the chain instead:', cause);
+        return fallback.load(debateId);
+      }
+    },
+  };
+}
+
+/**
+ * Picks the debate source: the indexer (with the chain as fallback) when configured,
+ * plain chain reads otherwise, and the bundled sample debate without any deployment.
+ */
 export function defaultSource(): DebateSource {
   const config = contractConfig();
-  return config ? contractSource(config.address, config.rpcUrl, config.ipfsGateway) : mockSource;
+  if (!config) {
+    return mockSource;
+  }
+  const chain = contractSource(config.address, config.rpcUrl, config.ipfsGateway);
+  return config.indexerUrl
+    ? withFallback(indexerSource(config.indexerUrl, config.rpcUrl, config.ipfsGateway), chain)
+    : chain;
 }

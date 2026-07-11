@@ -32,8 +32,14 @@ Set both variables (in `.env.local` or the environment):
 VITE_ARBORVOTE_ADDRESS=0x…   # ArborVote contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
 VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution (gateway is untrusted - reads are digest-verified)
-VITE_IPFS_API=https://…      # reserved for the upcoming authoring flow: kubo-compatible RPC API to publish content to
+VITE_IPFS_API=https://…      # optional, kubo-compatible RPC API the authoring flow publishes content to
+VITE_INDEXER_URL=https://…   # optional, GraphQL endpoint of the debate indexer (../indexer)
 ```
+
+With `VITE_INDEXER_URL` set, the whole debate loads from the indexer in a single GraphQL
+query instead of an RPC traversal of the tree, falling back to chain reads whenever the
+indexer is unreachable or has not caught up. `just dev-anvil` writes the variable
+automatically when the indexer repo is checked out. Transactions always go through the RPC.
 
 The ABI is extracted from `contracts/out/ArborVote.sol/ArborVote.json` into `src/abi/ArborVote.abi.json`.
 

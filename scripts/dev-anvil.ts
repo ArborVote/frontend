@@ -20,6 +20,8 @@ import { climateDebate } from './seed/climateDebate';
 
 const RPC_URL = 'http://127.0.0.1:8545';
 const VITE_PORT = 5173;
+// Hasura of the sibling indexer's dev stack (`just dev` in ../indexer).
+const INDEXER_GRAPHQL_URL = 'http://localhost:8090/v1/graphql';
 
 const frontendDir = new URL('..', import.meta.url).pathname;
 const contractsDir = new URL('../../contracts', import.meta.url).pathname;
@@ -109,14 +111,6 @@ try {
     log,
   });
 
-  const env = [
-    `VITE_ARBORVOTE_ADDRESS=${arborVote}`,
-    `VITE_RPC_URL=${RPC_URL}`,
-    ...(ipfsAvailable ? [`VITE_IPFS_GATEWAY=${IPFS_GATEWAY_URL}`, `VITE_IPFS_API=${KUBO_API_URL}`] : []),
-  ];
-  await Bun.write(`${frontendDir}.env.local`, env.join('\n') + '\n');
-  log(`.env.local written for debate ${debateId}`);
-
   const indexerNotified = await upsertIndexerEnv({
     ENVIO_ARBORVOTE_ADDRESS: arborVote,
     ...(ipfsAvailable ? { ENVIO_PIN_IPFS_API: KUBO_API_URL } : {}),
@@ -124,6 +118,16 @@ try {
   if (indexerNotified) {
     log('indexer/.env updated - `just dev` in ../indexer (re)indexes this deployment');
   }
+
+  const env = [
+    `VITE_ARBORVOTE_ADDRESS=${arborVote}`,
+    `VITE_RPC_URL=${RPC_URL}`,
+    ...(ipfsAvailable ? [`VITE_IPFS_GATEWAY=${IPFS_GATEWAY_URL}`, `VITE_IPFS_API=${KUBO_API_URL}`] : []),
+    // The app reads from the index when it is up and falls back to the chain when not.
+    ...(indexerNotified ? [`VITE_INDEXER_URL=${INDEXER_GRAPHQL_URL}`] : []),
+  ];
+  await Bun.write(`${frontendDir}.env.local`, env.join('\n') + '\n');
+  log(`.env.local written for debate ${debateId}`);
 
   log('personas (accounts from the anvil dev mnemonic, in derivation order):');
   for (const [name, account] of personas) {

@@ -7,6 +7,8 @@ export interface ContractConfig {
   ipfsGateway?: string;
   /** kubo-compatible RPC API to publish argument content to when authoring. */
   ipfsApi?: string;
+  /** GraphQL endpoint of the debate indexer; debates load from it in one query, with RPC as fallback. */
+  indexerUrl?: string;
 }
 
 /** The on-chain deployment the app talks to; null when browsing the bundled sample debate. */
@@ -21,5 +23,6 @@ export function contractConfig(): ContractConfig | null {
     rpcUrl,
     ipfsGateway: (import.meta.env.VITE_IPFS_GATEWAY as string | undefined) || undefined,
     ipfsApi: (import.meta.env.VITE_IPFS_API as string | undefined) || undefined,
+    indexerUrl: (import.meta.env.VITE_INDEXER_URL as string | undefined) || undefined,
   };
 }
