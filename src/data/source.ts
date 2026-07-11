@@ -1,5 +1,6 @@
 import { createPublicClient, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
+import { cidFromSha256Digest } from '../lib/cid';
 import type { ArgumentNode, Debate, Phase } from '../types';
 import { climateDebate } from './climateDebate';
 
@@ -28,33 +29,13 @@ interface OnChainArgument {
   votes: number;
 }
 
-const BASE32_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
-
-function base32(bytes: Uint8Array): string {
-  let bits = 0;
-  let value = 0;
-  let out = '';
-  for (const byte of bytes) {
-    value = (value << 8) | byte;
-    bits += 8;
-    while (bits >= 5) {
-      out += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
-      bits -= 5;
-    }
-  }
-  if (bits > 0) out += BASE32_ALPHABET[(value << (5 - bits)) & 31];
-  return out;
-}
-
 /**
  * The contract stores argument content as a bytes32 URI holding the sha-256 multihash
  * digest of an IPFS raw-leaves block (a full CID does not fit in 32 bytes, its digest
- * does). Rebuilds the CIDv1 (raw codec, base32: 'b' + base32(0x01 0x55 0x12 0x20 digest))
- * and fetches the text from the gateway. Content pinned via
- * `ipfs add --raw-leaves --cid-version=1` carries exactly this CID.
+ * does). Rebuilds the CID and fetches the text from the gateway.
  */
 async function fetchIpfsContent(contentURI: Hex, gateway: string): Promise<string | null> {
-  const cid = 'b' + base32(new Uint8Array([0x01, 0x55, 0x12, 0x20, ...hexToBytes(contentURI)]));
+  const cid = cidFromSha256Digest(hexToBytes(contentURI));
   try {
     const response = await fetch(`${gateway.replace(/\/$/, '')}/ipfs/${cid}`, {
       signal: AbortSignal.timeout(8000),
