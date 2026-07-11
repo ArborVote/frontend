@@ -1,4 +1,4 @@
-import { createPublicClient, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
+import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import type { ArgumentNode, Debate, Phase } from '../types';
@@ -24,6 +24,7 @@ const STATE_CREATED = 1;
 
 interface OnChainArgument {
   contentURI: Hex;
+  creator: Address;
   isSupporting: boolean;
   state: number;
   parentArgumentId: number;
@@ -125,6 +126,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 rawState: argument.state,
                 state: argument.state === STATE_CREATED ? ('created' as const) : ('final' as const),
                 finalizationTime: Number(argument.finalizationTime),
+                creator: argument.creator,
               };
             }),
         )
@@ -178,6 +180,7 @@ export interface IndexedArgumentRow {
   pro: string;
   con: string;
   votes: string;
+  creator: string;
 }
 
 /** Maps an indexer row to a debate node; the text still needs resolving from the contentURI. */
@@ -194,13 +197,15 @@ export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text
     weight: Number(row.votes),
     state: row.state === 'CREATED' ? 'created' : 'final',
     finalizationTime: Number(row.finalizationTime),
+    // The index stores addresses lowercased; checksum to match the chain reads.
+    creator: getAddress(row.creator),
   };
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime approved }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
-    argumentId parent_id isSupporting contentURI state finalizationTime pro con votes
+    argumentId parent_id isSupporting contentURI state finalizationTime pro con votes creator
   }
 }`;
 

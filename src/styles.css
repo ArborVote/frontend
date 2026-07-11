@@ -80,6 +80,24 @@ button {
   border-color: var(--pro);
 }
 
+/* An account address: shortened, full on hover, copied on click. */
+.address {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  color: inherit;
+  text-transform: none;
+  cursor: copy;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.address:hover {
+  color: var(--ink);
+}
+
 /* The live countdown next to the phase chip; hover shows the full schedule. */
 .phase-clock {
   font-size: 0.78rem;

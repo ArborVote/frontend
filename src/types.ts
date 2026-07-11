@@ -19,6 +19,11 @@ export interface ArgumentNode {
   state: ArgumentState;
   /** Chain time (unix seconds) from which the argument can be finalized; 0 once final. */
   finalizationTime: number;
+  /**
+   * The creator's checksummed address (the thesis' creator created the debate).
+   * Absent for bundled sample data, which has no accounts.
+   */
+  creator?: string;
 }
 
 /** The debate's on-chain phase clock, in unix seconds. */

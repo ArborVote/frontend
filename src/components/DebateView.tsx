@@ -4,6 +4,7 @@ import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/im
 import { useNow } from '../lib/time';
 import type { Debate, Side } from '../types';
 import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
+import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { FinalizePanel } from './FinalizePanel';
@@ -123,6 +124,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
             )}
+            {focus.creator && (
+              <>
+                {' '}
+                · created by <AddressChip address={focus.creator} />
+              </>
+            )}
           </p>
         ) : (
           <p className="focus-meta">
@@ -135,6 +142,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 · sways parent{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
+            )}
+            {focus.creator && (
+              <>
+                {' '}
+                · created by <AddressChip address={focus.creator} />
+              </>
             )}
           </p>
         )}
