@@ -214,6 +214,11 @@ button {
   stroke-width: 1.5;
 }
 
+/* Off-path sibling subtrees stay visible but recede. */
+.minitree-faded {
+  opacity: 0.35;
+}
+
 /* ── Ancestry rail (signature) ───────────────────────────────────────── */
 .rail {
   margin: 0.5rem 0 0.2rem;

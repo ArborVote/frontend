@@ -1,24 +1,63 @@
 import type { ArgumentNode, Debate } from '../types';
-import { ancestryOf, childrenOf } from '../types';
+import { ancestryOf, childrenOf, thesisOf } from '../types';
 
 /**
- * The rows of the mini tree-view: the thesis, then one row per step of the
- * ancestry path holding all children of the ancestor above it (pros before
- * cons, like the columns), and finally the focused argument's own children.
- * Rows outside the ancestry path stay collapsed, so the map grows and shrinks
- * as the reader drills down or climbs back up.
+ * Emphasis tiers of the mini tree-view: the focused argument and its ancestry
+ * are filled, their immediate context (every child of a path node) is outlined
+ * at full strength, and all other sibling subtrees are faded.
  */
-export function miniTreeRows(debate: Debate, focusedId: number): ArgumentNode[][] {
-  const path = ancestryOf(debate, focusedId);
-  const childrenRow = (parentId: number) => [
-    ...childrenOf(debate, parentId, 'pro'),
-    ...childrenOf(debate, parentId, 'con'),
-  ];
+export type MiniTreeEmphasis = 'focus' | 'path' | 'context' | 'faded';
 
-  const rows = [[path[0]], ...path.slice(1).map((_, i) => childrenRow(path[i].id))];
-  const focusChildren = childrenRow(focusedId);
-  if (focusChildren.length > 0) rows.push(focusChildren);
-  return rows;
+export function miniTreeEmphasis(debate: Debate, focusedId: number): Map<number, MiniTreeEmphasis> {
+  const emphasis = new Map<number, MiniTreeEmphasis>(debate.nodes.map((node) => [node.id, 'faded']));
+  const path = ancestryOf(debate, focusedId);
+  for (const pathNode of path) {
+    for (const child of allChildrenOf(debate, pathNode.id)) {
+      emphasis.set(child.id, 'context');
+    }
+  }
+  for (const pathNode of path) {
+    emphasis.set(pathNode.id, 'path');
+  }
+  emphasis.set(focusedId, 'focus');
+  return emphasis;
+}
+
+export interface MiniTreePlacement {
+  node: ArgumentNode;
+  depth: number;
+  /** Horizontal position in slot units; leaves take whole slots, parents sit between. */
+  slot: number;
+}
+
+/** Children in column order: pros before cons. */
+function allChildrenOf(debate: Debate, id: number): ArgumentNode[] {
+  return [...childrenOf(debate, id, 'pro'), ...childrenOf(debate, id, 'con')];
+}
+
+/**
+ * A tidy layout of the whole debate tree: leaves occupy consecutive slots,
+ * every parent is centered over its children's span.
+ */
+export function miniTreeLayout(debate: Debate): MiniTreePlacement[] {
+  const placements: MiniTreePlacement[] = [];
+  let nextLeafSlot = 0;
+
+  const place = (node: ArgumentNode, depth: number): number => {
+    const children = allChildrenOf(debate, node.id);
+    let slot: number;
+    if (children.length === 0) {
+      slot = nextLeafSlot++;
+    } else {
+      const childSlots = children.map((child) => place(child, depth + 1));
+      slot = (childSlots[0] + childSlots[childSlots.length - 1]) / 2;
+    }
+    placements.push({ node, depth, slot });
+    return slot;
+  };
+
+  place(thesisOf(debate), 0);
+  return placements;
 }
 
 const NODE_W = 22;
@@ -32,7 +71,7 @@ function fillOf(node: ArgumentNode): string {
   return node.side === 'pro' ? 'var(--pro)' : 'var(--con)';
 }
 
-/** A kialo-style overview map of the debate around the focused argument. */
+/** A kialo-style overview map of the whole debate, emphasized around the focused argument. */
 export function MiniTree({
   debate,
   focusedId,
@@ -42,38 +81,37 @@ export function MiniTree({
   focusedId: number;
   onFocus: (id: number) => void;
 }) {
-  const rows = miniTreeRows(debate, focusedId);
-  if (rows.length < 2) return null;
+  if (debate.nodes.length < 2) return null;
 
-  const onPath = new Set(ancestryOf(debate, focusedId).map((node) => node.id));
-  const width = 2 * PAD + Math.max(...rows.map((row) => row.length * (NODE_W + H_GAP) - H_GAP));
-  const height = 2 * PAD + rows.length * (NODE_H + V_GAP) - V_GAP;
+  const placements = miniTreeLayout(debate);
+  const emphasis = miniTreeEmphasis(debate, focusedId);
 
-  const positions = new Map<number, { x: number; y: number }>();
-  rows.forEach((row, rowIndex) => {
-    const rowWidth = row.length * (NODE_W + H_GAP) - H_GAP;
-    row.forEach((node, columnIndex) => {
-      positions.set(node.id, {
-        x: (width - rowWidth) / 2 + columnIndex * (NODE_W + H_GAP),
-        y: PAD + rowIndex * (NODE_H + V_GAP),
-      });
-    });
-  });
+  const maxSlot = Math.max(...placements.map(({ slot }) => slot));
+  const maxDepth = Math.max(...placements.map(({ depth }) => depth));
+  const width = 2 * PAD + maxSlot * (NODE_W + H_GAP) + NODE_W;
+  const height = 2 * PAD + (maxDepth + 1) * (NODE_H + V_GAP) - V_GAP;
 
-  // Every node in a row is a child of the single path node in the row above.
-  const connectors = rows.slice(1).flatMap((row, rowIndex) => {
-    const parent = positions.get(rows[rowIndex].find((node) => onPath.has(node.id))!.id)!;
-    const fromX = parent.x + NODE_W / 2;
-    const fromY = parent.y + NODE_H;
-    return row.map((node) => {
-      const { x, y } = positions.get(node.id)!;
-      const toX = x + NODE_W / 2;
+  const positions = new Map(
+    placements.map(({ node, depth, slot }) => [
+      node.id,
+      { x: PAD + slot * (NODE_W + H_GAP), y: PAD + depth * (NODE_H + V_GAP) },
+    ]),
+  );
+
+  const connectors = placements
+    .filter(({ node }) => node.parentId !== null)
+    .map(({ node }) => {
+      const from = positions.get(node.parentId as number)!;
+      const to = positions.get(node.id)!;
+      const fromX = from.x + NODE_W / 2;
+      const fromY = from.y + NODE_H;
+      const toX = to.x + NODE_W / 2;
       return {
         id: node.id,
-        d: `M ${fromX} ${fromY} C ${fromX} ${fromY + V_GAP / 2}, ${toX} ${y - V_GAP / 2}, ${toX} ${y}`,
+        faded: emphasis.get(node.id) === 'faded',
+        d: `M ${fromX} ${fromY} C ${fromX} ${fromY + V_GAP / 2}, ${toX} ${to.y - V_GAP / 2}, ${toX} ${to.y}`,
       };
     });
-  });
 
   return (
     <div className="minitree-wrap">
@@ -86,24 +124,28 @@ export function MiniTree({
         aria-label="Debate overview map"
       >
         {connectors.map((connector) => (
-          <path key={connector.id} className="minitree-edge" d={connector.d} />
+          <path
+            key={connector.id}
+            className={`minitree-edge ${connector.faded ? 'minitree-faded' : ''}`}
+            d={connector.d}
+          />
         ))}
-        {rows.flat().map((node) => {
+        {placements.map(({ node }) => {
           const { x, y } = positions.get(node.id)!;
+          const tier = emphasis.get(node.id)!;
+          const onPath = tier === 'focus' || tier === 'path';
           return (
             <rect
               key={node.id}
-              className={`minitree-node ${node.id === focusedId ? 'minitree-focus' : ''}`}
+              className={`minitree-node ${tier === 'focus' ? 'minitree-focus' : ''} ${
+                tier === 'faded' ? 'minitree-faded' : ''
+              }`}
               x={x}
               y={y}
               width={NODE_W}
               height={NODE_H}
               rx={3}
-              style={
-                onPath.has(node.id)
-                  ? { fill: fillOf(node) }
-                  : { fill: 'var(--card)', stroke: fillOf(node) }
-              }
+              style={onPath ? { fill: fillOf(node) } : { fill: 'var(--card)', stroke: fillOf(node) }}
               role="link"
               tabIndex={0}
               aria-label={node.text}
