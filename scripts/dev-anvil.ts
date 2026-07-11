@@ -84,8 +84,18 @@ try {
   }
   log(`wallet setup: add network ${RPC_URL} (chain id 31337) and import an account above`);
 
+  // Bun auto-loaded the PREVIOUS .env.local into process.env when this tool started, and
+  // OS environment variables take precedence over env files in vite - scrub them so the
+  // dev server reads the freshly written file instead of last run's values.
+  const viteEnv: Record<string, string | undefined> = { ...process.env };
+  for (const key of Object.keys(viteEnv)) {
+    if (key.startsWith('VITE_')) {
+      delete viteEnv[key];
+    }
+  }
   const vite = Bun.spawn(['bun', 'run', 'dev'], {
     cwd: frontendDir,
+    env: viteEnv,
     stdout: 'inherit',
     stderr: 'inherit',
     stdin: 'inherit',
