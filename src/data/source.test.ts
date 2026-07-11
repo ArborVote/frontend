@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import { rpcUp } from '../../scripts/devstack/anvil';
-import type { Debate } from '../types';
-import { contractSource, indexerSource, nodeFromIndex, withFallback, type DebateSource } from './source';
+import type { Debate, DebateSummary } from '../types';
+import {
+  contractSource,
+  indexerSource,
+  nodeFromIndex,
+  summaryFromIndex,
+  withFallback,
+  type DebateSource,
+} from './source';
 
 describe('nodeFromIndex', () => {
   test('maps an argument row, deriving the approval from the reserves', () => {
@@ -51,21 +58,50 @@ describe('nodeFromIndex', () => {
   });
 });
 
+describe('summaryFromIndex', () => {
+  test('maps a debate row to a browse summary', () => {
+    expect(
+      summaryFromIndex({
+        id: '2',
+        creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+        contentURI: '0xabc2',
+        phase: 'RATING',
+        totalVotes: '291',
+        argumentsCount: '25',
+      }),
+    ).toEqual({
+      id: 2,
+      contentURI: '0xabc2',
+      phase: 'rating',
+      stake: 291,
+      argumentsCount: 25,
+      creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    });
+  });
+});
+
 describe('withFallback', () => {
   const debate = { id: 0, phase: 'rating', nodes: [] } as unknown as Debate;
+  const summaries = [{ id: 0 }] as unknown as DebateSummary[];
   const source = (result: Debate | Error): DebateSource => ({
     load: async () => {
       if (result instanceof Error) throw result;
       return result;
     },
+    list: async () => {
+      if (result instanceof Error) throw result;
+      return summaries;
+    },
   });
 
   test('serves from the primary while it works', async () => {
     expect(await withFallback(source(debate), source(new Error('unused'))).load(0)).toBe(debate);
+    expect(await withFallback(source(debate), source(new Error('unused'))).list()).toBe(summaries);
   });
 
   test('falls back when the primary fails', async () => {
     expect(await withFallback(source(new Error('indexer down')), source(debate)).load(0)).toBe(debate);
+    expect(await withFallback(source(new Error('indexer down')), source(debate)).list()).toBe(summaries);
   });
 });
 
@@ -100,5 +136,12 @@ describe('indexerSource (against the local dev stack)', () => {
     expect(fromIndex.timing!.editingEndTime).toBe(fromChain.timing!.editingEndTime);
     expect(fromIndex.timing!.ratingEndTime).toBe(fromChain.timing!.ratingEndTime);
     expect(fromIndex.nodes).toEqual(fromChain.nodes);
+  }, 30_000);
+
+  test.skipIf(!stackUp)('lists the same debates as the chain enumeration', async () => {
+    const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).list();
+    const fromChain = await contractSource(address!, RPC_URL).list();
+    expect(fromIndex.length).toBeGreaterThan(0);
+    expect(fromIndex).toEqual(fromChain);
   }, 30_000);
 });

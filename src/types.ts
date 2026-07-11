@@ -61,6 +61,39 @@ export interface Debate {
   approved?: boolean;
 }
 
+/** A debate as it appears in the browse list. */
+export interface DebateSummary {
+  id: number;
+  thesis: string;
+  phase: Phase;
+  /** Vote tokens committed to the debate's markets (deposits plus net stakes). */
+  stake: number;
+  argumentsCount: number;
+  /** The creator's checksummed address; absent for bundled sample data. */
+  creator?: string;
+}
+
+/** The browse view's filter settings. */
+export interface DebateFilter {
+  status: Phase | 'all';
+  minStake: number;
+  /** Case-insensitive substring of the creator's address; empty matches all. */
+  author: string;
+}
+
+/** Applies the browse filters; newest debates first. */
+export function filterDebates(debates: DebateSummary[], filter: DebateFilter): DebateSummary[] {
+  const author = filter.author.trim().toLowerCase();
+  return debates
+    .filter(
+      (debate) =>
+        (filter.status === 'all' || debate.phase === filter.status) &&
+        debate.stake >= filter.minStake &&
+        (author === '' || (debate.creator ?? '').toLowerCase().includes(author)),
+    )
+    .sort((a, b) => b.id - a.id);
+}
+
 /** A permissionless phase transition that is currently open for anyone to trigger. */
 export interface PhasePoke {
   /** `advance` maps to `advancePhase`, `tally` to `tallyTree` (the Finished transition). */

@@ -1,16 +1,27 @@
 import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
-import type { ArgumentNode, Debate, Phase } from '../types';
+import type { ArgumentNode, Debate, DebateSummary, Phase } from '../types';
+import { thesisOf } from '../types';
 import { climateDebate } from './climateDebate';
 import { contractConfig } from './config';
 
 export interface DebateSource {
   load(debateId: number): Promise<Debate>;
+  list(): Promise<DebateSummary[]>;
 }
 
 export const mockSource: DebateSource = {
   load: async () => climateDebate,
+  list: async () => [
+    {
+      id: climateDebate.id,
+      thesis: thesisOf(climateDebate).text,
+      phase: climateDebate.phase,
+      stake: climateDebate.nodes.reduce((sum, node) => sum + node.weight, 0),
+      argumentsCount: climateDebate.nodes.length,
+    },
+  ],
 };
 
 const PHASE_BY_STATUS: Record<number, Phase> = {
@@ -153,6 +164,45 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         approved,
       };
     },
+
+    async list(): Promise<DebateSummary[]> {
+      const count = Number(
+        await client.readContract({ address, abi, functionName: 'debatesCount', args: [] }),
+      );
+      return Promise.all(
+        [...Array(count).keys()].map(async (debateId) => {
+          const id = BigInt(debateId);
+          const [thesis, [currentPhase], [totalVotes, argumentsCount]] = await Promise.all([
+            client.readContract({
+              address,
+              abi,
+              functionName: 'getArgument',
+              args: [id, 0],
+            }) as Promise<OnChainArgument>,
+            client.readContract({
+              address,
+              abi,
+              functionName: 'phases',
+              args: [id],
+            }) as Promise<[number, bigint, bigint, bigint]>,
+            client.readContract({
+              address,
+              abi,
+              functionName: 'debates',
+              args: [id],
+            }) as Promise<[number, number]>,
+          ]);
+          return {
+            id: debateId,
+            thesis: await contentToText(thesis.contentURI, ipfsGateway),
+            phase: PHASE_BY_STATUS[currentPhase] ?? 'editing',
+            stake: totalVotes,
+            argumentsCount,
+            creator: thesis.creator,
+          };
+        }),
+      );
+    },
   };
 }
 
@@ -203,11 +253,40 @@ export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text
   };
 }
 
+/** A raw indexer debate row for the browse list. */
+export interface IndexedDebateSummaryRow {
+  id: string;
+  creator: string;
+  contentURI: string;
+  phase: string;
+  totalVotes: string;
+  argumentsCount: string;
+}
+
+/** Maps an indexer row to a browse-list summary; the thesis text still needs resolving. */
+export function summaryFromIndex(
+  row: IndexedDebateSummaryRow,
+): Omit<DebateSummary, 'thesis'> & { contentURI: Hex } {
+  return {
+    id: Number(row.id),
+    contentURI: row.contentURI as Hex,
+    phase: PHASE_BY_NAME[row.phase] ?? 'editing',
+    stake: Number(row.totalVotes),
+    argumentsCount: Number(row.argumentsCount),
+    // The index stores addresses lowercased; checksum to match the chain reads.
+    creator: getAddress(row.creator),
+  };
+}
+
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime approved }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI state finalizationTime pro con votes creator
   }
+}`;
+
+const INDEXER_LIST_QUERY = `query DebateList {
+  Debate { id creator contentURI phase totalVotes argumentsCount }
 }`;
 
 /**
@@ -218,26 +297,33 @@ const INDEXER_QUERY = `query DebateTree($debateId: String!) {
 export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
+  const graphql = async <T>(query: string, variables?: Record<string, string>): Promise<T> => {
+    const response = await fetch(indexerUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!response.ok) {
+      throw new Error(`The indexer responded with status ${response.status}`);
+    }
+    const { data, errors } = (await response.json()) as {
+      data?: T;
+      errors?: Array<{ message: string }>;
+    };
+    if (errors?.length || !data) {
+      throw new Error(errors?.[0]?.message ?? 'The indexer returned no data');
+    }
+    return data;
+  };
+
   return {
     async load(debateId: number): Promise<Debate> {
-      const [response, latestBlock] = await Promise.all([
-        fetch(indexerUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ query: INDEXER_QUERY, variables: { debateId: String(debateId) } }),
+      const [data, latestBlock] = await Promise.all([
+        graphql<{ Debate: IndexedDebateRow[]; Argument: IndexedArgumentRow[] }>(INDEXER_QUERY, {
+          debateId: String(debateId),
         }),
         client.getBlock(),
       ]);
-      if (!response.ok) {
-        throw new Error(`The indexer responded with status ${response.status}`);
-      }
-      const { data, errors } = (await response.json()) as {
-        data?: { Debate: IndexedDebateRow[]; Argument: IndexedArgumentRow[] };
-        errors?: Array<{ message: string }>;
-      };
-      if (errors?.length || !data) {
-        throw new Error(errors?.[0]?.message ?? 'The indexer returned no data');
-      }
       const [debate] = data.Debate;
       if (!debate) {
         throw new Error(`Debate ${debateId} is not in the index (yet)`);
@@ -264,20 +350,36 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
         approved: debate.approved ?? undefined,
       };
     },
+
+    async list(): Promise<DebateSummary[]> {
+      const data = await graphql<{ Debate: IndexedDebateSummaryRow[] }>(INDEXER_LIST_QUERY);
+      const summaries = await Promise.all(
+        data.Debate.map(async (row) => {
+          const { contentURI, ...summary } = summaryFromIndex(row);
+          return { ...summary, thesis: await contentToText(contentURI, ipfsGateway) };
+        }),
+      );
+      // Debate entity IDs are strings, so Hasura cannot order them numerically.
+      return summaries.sort((a, b) => a.id - b.id);
+    },
   };
 }
 
 /** Serves from the primary source, falling back (with a console note) when it fails. */
 export function withFallback(primary: DebateSource, fallback: DebateSource): DebateSource {
-  return {
-    async load(debateId: number): Promise<Debate> {
+  const guarded = <A extends unknown[], R>(call: (source: DebateSource) => (...args: A) => Promise<R>) => {
+    return async (...args: A): Promise<R> => {
       try {
-        return await primary.load(debateId);
+        return await call(primary)(...args);
       } catch (cause) {
         console.warn('Debate indexer unavailable - reading from the chain instead:', cause);
-        return fallback.load(debateId);
+        return call(fallback)(...args);
       }
-    },
+    };
+  };
+  return {
+    load: guarded((source) => source.load.bind(source)),
+    list: guarded((source) => source.list.bind(source)),
   };
 }
 

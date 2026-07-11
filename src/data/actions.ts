@@ -39,6 +39,8 @@ export interface ArgumentPosition {
 
 export interface DebateActions {
   account: Address;
+  /** Creates a debate around a thesis and returns the new debate's ID. */
+  createDebate(thesis: string, timeUnitSeconds: number): Promise<number>;
   userState(debateId: number): Promise<UserState>;
   position(debateId: number, argumentId: number): Promise<ArgumentPosition>;
   join(debateId: number): Promise<void>;
@@ -89,8 +91,9 @@ export async function connectDebateActions(
       args,
     })) as T;
 
-  const write = async (functionName: string, args: unknown[]): Promise<void> => {
-    const { request } = await publicClient.simulateContract({
+  // Returns the simulated call's return value (what the mined call will return).
+  const write = async (functionName: string, args: unknown[]): Promise<unknown> => {
+    const { request, result } = await publicClient.simulateContract({
       account,
       address: config.address,
       abi: abi as Abi,
@@ -103,10 +106,20 @@ export async function connectDebateActions(
     if (receipt.status === 'reverted') {
       throw new Error('The transaction was mined but reverted - someone else probably got there first.');
     }
+    return result;
   };
+
+  /** Publishes authored text through the content pipeline, digest-only without an IPFS API. */
+  const publish = async (text: string): Promise<Hex> =>
+    config.ipfsApi ? (await publishText(config.ipfsApi, text)).digest : await contentURIOf(text);
 
   return {
     account,
+
+    async createDebate(thesis, timeUnitSeconds) {
+      const contentURI = await publish(thesis);
+      return Number(await write('createDebate', [contentURI, BigInt(timeUnitSeconds)]));
+    },
 
     async userState(debateId) {
       const [role, tokens] = await Promise.all([
@@ -125,12 +138,12 @@ export async function connectDebateActions(
       return { proShares: shares.pro, conShares: shares.con, claimableFees: isCreator ? argument.fees : 0 };
     },
 
-    join: (debateId) => write('join', [BigInt(debateId)]),
+    async join(debateId) {
+      await write('join', [BigInt(debateId)]);
+    },
 
     async addArgument(debateId, parentArgumentId, side, initialApproval, text) {
-      const contentURI: Hex = config.ipfsApi
-        ? (await publishText(config.ipfsApi, text)).digest
-        : await contentURIOf(text);
+      const contentURI = await publish(text);
       await write('addArgument', [
         BigInt(debateId),
         parentArgumentId,
@@ -140,15 +153,21 @@ export async function connectDebateActions(
       ]);
     },
 
-    stake: (debateId, argumentId, side, amount) =>
-      write(side === 'pro' ? 'stakePro' : 'stakeCon', [BigInt(debateId), argumentId, amount]),
+    async stake(debateId, argumentId, side, amount) {
+      await write(side === 'pro' ? 'stakePro' : 'stakeCon', [BigInt(debateId), argumentId, amount]);
+    },
 
-    redeemShares: (debateId, argumentId) =>
-      write('redeemArgumentShares', [BigInt(debateId), argumentId, account]),
+    async redeemShares(debateId, argumentId) {
+      await write('redeemArgumentShares', [BigInt(debateId), argumentId, account]);
+    },
 
-    claimFees: (debateId, argumentId) => write('claimFees', [BigInt(debateId), argumentId]),
+    async claimFees(debateId, argumentId) {
+      await write('claimFees', [BigInt(debateId), argumentId]);
+    },
 
-    finalizeArgument: (debateId, argumentId) => write('finalizeArgument', [BigInt(debateId), argumentId]),
+    async finalizeArgument(debateId, argumentId) {
+      await write('finalizeArgument', [BigInt(debateId), argumentId]);
+    },
 
     async advancePhase(debateId) {
       // Below its time gates the contract silently does nothing instead of
@@ -162,7 +181,9 @@ export async function connectDebateActions(
       }
     },
 
-    tallyTree: (debateId) => write('tallyTree', [BigInt(debateId)]),
+    async tallyTree(debateId) {
+      await write('tallyTree', [BigInt(debateId)]);
+    },
   };
 }
 

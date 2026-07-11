@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import type { Abi, Address, EIP1193Provider, HDAccount } from 'viem';
+import type { Address, EIP1193Provider } from 'viem';
 
 import { rpcUp } from '../../scripts/devstack/anvil';
 import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
-import { contentURIOf } from '../lib/ipfs';
 import { connectDebateActions } from './actions';
 
 const RPC_URL = 'http://127.0.0.1:8545';
@@ -51,27 +50,11 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     const poh = await deploy('MockProofOfHumanity.m.sol', 'MockProofOfHumanity', []);
     const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
-    const { abi } = await loadArtifact(CONTRACTS_DIR, 'ArborVote.sol', 'ArborVote');
 
-    // Debate creation stays outside the action layer - it is a deployment concern.
-    const act = async (account: HDAccount, functionName: string, args: unknown[]) => {
-      const { request } = await client.simulateContract({
-        account,
-        address,
-        abi: abi as Abi,
-        functionName,
-        args,
-      });
-      const hash = await client.writeContract(request);
-      await client.waitForTransactionReceipt({ hash });
-    };
     const warp = async (seconds: number) => {
       await client.increaseTime({ seconds });
       await client.mine({ blocks: 1 });
     };
-
-    const timeUnit = 60;
-    await act(deployer, 'createDebate', [await contentURIOf('Test thesis'), timeUnit]);
 
     // The action layer, as the UI uses it: no IPFS API configured - digest-only publishing.
     const config = { address, rpcUrl: RPC_URL };
@@ -79,6 +62,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
     // The keeper never joins: the pokes (finalize/advance/tally) are permissionless.
     const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+
+    // The author starts the debate through the action layer and gets its ID back.
+    const timeUnit = 60;
+    expect(await author.createDebate('Test thesis', timeUnit)).toBe(0);
 
     // Join.
     expect((await author.userState(0)).joined).toBe(false);
