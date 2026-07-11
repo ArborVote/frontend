@@ -2,21 +2,18 @@ import type { ArgumentNode, Debate } from '../types';
 import { ancestryOf, childrenOf, thesisOf } from '../types';
 
 /**
- * Emphasis tiers of the mini tree-view: the focused argument and its ancestry
- * are filled, their immediate context (every child of a path node) is outlined
- * at full strength, and all other sibling subtrees are faded.
+ * Emphasis tiers of the mini tree-view: the focused argument and its ancestry are
+ * filled, the focus's own children (the ones shown in the columns) are outlined at
+ * full strength, and everything else fades - the same rule at every level.
  */
 export type MiniTreeEmphasis = 'focus' | 'path' | 'context' | 'faded';
 
 export function miniTreeEmphasis(debate: Debate, focusedId: number): Map<number, MiniTreeEmphasis> {
   const emphasis = new Map<number, MiniTreeEmphasis>(debate.nodes.map((node) => [node.id, 'faded']));
-  const path = ancestryOf(debate, focusedId);
-  for (const pathNode of path) {
-    for (const child of allChildrenOf(debate, pathNode.id)) {
-      emphasis.set(child.id, 'context');
-    }
+  for (const child of allChildrenOf(debate, focusedId)) {
+    emphasis.set(child.id, 'context');
   }
-  for (const pathNode of path) {
+  for (const pathNode of ancestryOf(debate, focusedId)) {
     emphasis.set(pathNode.id, 'path');
   }
   emphasis.set(focusedId, 'focus');
