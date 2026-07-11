@@ -6,6 +6,7 @@ import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { FinalizePanel } from './FinalizePanel';
 import { InvestPanel } from './InvestPanel';
+import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
 
 /** The debate interactions available to the connected, joined account. */
@@ -83,6 +84,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
 
   return (
     <main className="debate">
+      <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>

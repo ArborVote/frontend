@@ -177,6 +177,43 @@ button {
   color: var(--con);
 }
 
+/* ── Mini tree-view ──────────────────────────────────────────────────── */
+.minitree-wrap {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.minitree {
+  flex: none;
+}
+
+.minitree-edge {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 1.25;
+}
+
+.minitree-node {
+  stroke-width: 1.25;
+  cursor: pointer;
+}
+
+/* Keep the ring for keyboard focus only - clicks already move the highlight. */
+.minitree-node:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.minitree-node:hover {
+  opacity: 0.75;
+}
+
+.minitree-focus {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
 /* ── Ancestry rail (signature) ───────────────────────────────────────── */
 .rail {
   margin: 0.5rem 0 0.2rem;
