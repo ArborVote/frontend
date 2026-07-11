@@ -19,11 +19,50 @@ import { ensureKubo, IPFS_GATEWAY_URL, KUBO_API_URL } from './devstack/ipfs';
 import { climateDebate } from './seed/climateDebate';
 
 const RPC_URL = 'http://127.0.0.1:8545';
+const VITE_PORT = 5173;
 
 const frontendDir = new URL('..', import.meta.url).pathname;
 const contractsDir = new URL('../../contracts', import.meta.url).pathname;
+const indexerDir = new URL('../../indexer', import.meta.url).pathname;
 
 const log = (line: string) => console.log(`[dev-anvil] ${line}`);
+
+/**
+ * Hands the deployment over to the sibling indexer repo: upserts the given keys
+ * into indexer/.env, which envio interpolates into its config. This keeps the
+ * index pointed at the newest deployment even when a reused anvil moves the
+ * contract to a fresh nonce. A no-op when the indexer repo is not checked out.
+ */
+async function upsertIndexerEnv(entries: Record<string, string>): Promise<boolean> {
+  if (!(await Bun.file(`${indexerDir}/package.json`).exists())) {
+    return false;
+  }
+  const envFile = Bun.file(`${indexerDir}/.env`);
+  const lines = ((await envFile.exists()) ? await envFile.text() : '').split('\n');
+  for (const [key, value] of Object.entries(entries)) {
+    const line = `${key}=${value}`;
+    const existing = lines.findIndex((candidate) => candidate.startsWith(`${key}=`));
+    if (existing >= 0) {
+      lines[existing] = line;
+    } else {
+      lines.push(line);
+    }
+  }
+  await Bun.write(envFile, lines.join('\n').trimEnd() + '\n');
+  return true;
+}
+
+/** Whether something (usually an earlier dev server) already listens on the port. */
+function portInUse(port: number): boolean {
+  for (const hostname of ['::1', '127.0.0.1']) {
+    try {
+      Bun.listen({ hostname, port, socket: { data() {} } }).stop(true);
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
 
 const anvil = await ensureAnvil(RPC_URL);
 log(anvil.selfStarted ? 'anvil started' : `reusing the anvil already running at ${RPC_URL}`);
@@ -78,11 +117,28 @@ try {
   await Bun.write(`${frontendDir}.env.local`, env.join('\n') + '\n');
   log(`.env.local written for debate ${debateId}`);
 
+  const indexerNotified = await upsertIndexerEnv({
+    ENVIO_ARBORVOTE_ADDRESS: arborVote,
+    ...(ipfsAvailable ? { ENVIO_PIN_IPFS_API: KUBO_API_URL } : {}),
+  });
+  if (indexerNotified) {
+    log('indexer/.env updated - `just dev` in ../indexer (re)indexes this deployment');
+  }
+
   log('personas (accounts from the anvil dev mnemonic, in derivation order):');
   for (const [name, account] of personas) {
     log(`  ${name}: ${account.address}`);
   }
   log(`wallet setup: add network ${RPC_URL} (chain id 31337) and import an account above`);
+
+  // A dev server from an earlier run restarts itself when .env.local changes, so it
+  // already serves this deployment - a second vite would silently bind another port
+  // and leave two UIs on different contracts (exactly the confusion this prevents).
+  // Exit without the finally: the stack (chain + restarted dev server) stays up.
+  if (portInUse(VITE_PORT)) {
+    log(`a dev server is already running on port ${VITE_PORT} and has picked up the new deployment - not starting another`);
+    process.exit(0);
+  }
 
   // Bun auto-loaded the PREVIOUS .env.local into process.env when this tool started, and
   // OS environment variables take precedence over env files in vite - scrub them so the
