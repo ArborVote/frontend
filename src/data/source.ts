@@ -107,7 +107,9 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                       ? ('pro' as const)
                       : ('con' as const),
                 text: await contentToText(argument.contentURI, ipfsGateway),
-                approval: marketSize === 0 ? 0.5 : argument.pro / marketSize,
+                // Approval is the pro-share price of the argument's constant-product market:
+                // the scarcer the pro reserve, the higher the approval.
+                approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
                 weight: argument.votes,
                 state: argument.state,
               };

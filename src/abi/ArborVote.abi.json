@@ -40,6 +40,62 @@
   },
   {
     "type": "function",
+    "name": "calculateInvestment",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "isPro",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "investmentData",
+        "type": "tuple",
+        "internalType": "struct Argument.Investment",
+        "components": [
+          {
+            "name": "isPro",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "voteTokensInvested",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fee",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "sharesOut",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "debates",
     "inputs": [
       {
@@ -124,17 +180,7 @@
             "internalType": "uint32"
           },
           {
-            "name": "proIssued",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
             "name": "con",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "conIssued",
             "type": "uint32",
             "internalType": "uint32"
           },
