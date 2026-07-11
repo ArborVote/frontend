@@ -19,7 +19,9 @@ The sample debate is modeled on kialo's ["Should humans act to fight climate cha
 just dev-anvil
 ```
 
-This starts anvil (if not already running), deploys ArborVote plus a mock Proof of Humanity via `contracts/script/DeployLocal.s.sol`, seeds a sample debate, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import anvil's default key printed by the script.
+One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys ArborVote plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — pins the argument texts to IPFS, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
+
+Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`invest`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts, their on-chain digests, and what gets pinned — they cannot drift apart.
 
 ## Reading any deployment
 
@@ -44,7 +46,7 @@ just ipfs-up     # start the node (gateway on 127.0.0.1:8080, RPC on 127.0.0.1:5
 just ipfs-down   # stop it
 ```
 
-`dev-anvil.sh` starts the node and pins the seed content automatically when Docker is available.
+`dev-anvil.ts` starts the node and pins the seed content automatically when Docker is available, asserting that each pinned CID matches the on-chain digest.
 
 ## Wallets
 

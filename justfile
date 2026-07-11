@@ -13,9 +13,9 @@ install:
 dev:
     bun run dev
 
-# Start anvil, deploy and seed ArborVote, then run the dev server against it
+# Start anvil, deploy and seed ArborVote from the debate script, then run the dev server against it
 dev-anvil:
-    bash scripts/dev-anvil.sh
+    bun scripts/dev-anvil.ts
 
 # Type-check and build for production
 build:
