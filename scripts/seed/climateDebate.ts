@@ -3,8 +3,8 @@
  * source of truth for the seeded texts: the runner hashes each text into the on-chain
  * contentURI and pins the same bytes to IPFS, so content can never drift.
  *
- * Budgets: every persona holds 100 vote tokens and an argument costs 10 -
- * alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
+ * Budgets: every persona holds 100 vote tokens and each argument here stakes the
+ * minimum 10-token deposit - alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
  * erika and frank join as pure raters, and the authors spend leftover budget.
  */
 
