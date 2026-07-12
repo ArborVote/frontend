@@ -262,10 +262,6 @@ export default function App() {
         await actions.claimFees(debateId, argumentId);
         await refresh();
       },
-      finalize: async (argumentId) => {
-        await actions.finalizeArgument(debateId, argumentId);
-        await refresh();
-      },
     };
   }, [actions, userState, debateId, refresh]);
 

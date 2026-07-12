@@ -1,24 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import type { ArgumentNode, Debate, DebateSummary, DebateTiming, Phase } from './types';
-import { availablePhasePoke, filterDebates, finalizable } from './types';
+import type { Debate, DebateSummary, DebateTiming, Phase } from './types';
+import { availablePhasePoke, filterDebates } from './types';
 
 const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0, loadedAt: 0 };
 
 function debate(phase: Phase, timing?: DebateTiming): Debate {
   return { id: 0, phase, nodes: [], timing };
-}
-
-function node(state: ArgumentNode['state'], finalizationTime: number): ArgumentNode {
-  return {
-    id: 1,
-    parentId: 0,
-    side: 'pro',
-    text: '',
-    approval: 0.5,
-    weight: 0,
-    state,
-    finalizationTime,
-  };
 }
 
 describe('availablePhasePoke', () => {
@@ -119,32 +106,5 @@ describe('filterDebates', () => {
     ];
     const result = filterDebates(debates, { status: 'rating', author: '0xf39', sort: 'stake' });
     expect(result.map((d) => d.id)).toEqual([1, 0]);
-  });
-});
-
-describe('finalizable', () => {
-  const live = debate('editing', { ...TIMING, chainTime: 500 });
-
-  test('opens for a created argument whose finalization time has passed', () => {
-    expect(finalizable(node('created', 500), live)).toBe(true);
-    expect(finalizable(node('created', 501), live)).toBe(false);
-  });
-
-  test('never opens for final arguments', () => {
-    expect(finalizable(node('final', 0), live)).toBe(false);
-  });
-
-  test('never opens once the debate is finished - the tally has already run', () => {
-    expect(finalizable(node('created', 0), debate('finished', { ...TIMING, chainTime: 9999 }))).toBe(false);
-  });
-
-  test('never opens on sample data without a chain', () => {
-    expect(finalizable(node('created', 0), debate('editing'))).toBe(false);
-  });
-
-  test('opens live as the chain-time estimate advances between reloads', () => {
-    const stale = debate('editing', { ...TIMING, chainTime: 400, loadedAt: 100 });
-    expect(finalizable(node('created', 500), stale, 199)).toBe(false);
-    expect(finalizable(node('created', 500), stale, 200)).toBe(true);
   });
 });

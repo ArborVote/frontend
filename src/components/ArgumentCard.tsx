@@ -67,15 +67,15 @@ export function ArgumentCard({
             className="card-draft"
             title={
               finalizesIn !== null && finalizesIn <= 0
-                ? 'Still editable, not yet tradeable - anyone may finalize it now'
-                : 'Not final yet - still editable, not yet tradeable'
+                ? 'Editing window closed - locking in as final'
+                : 'Draft: editable and movable until its editing window closes, then final automatically'
             }
           >
             {finalizesIn === null
               ? 'draft'
               : finalizesIn > 0
-                ? `draft · ${formatDuration(finalizesIn)}`
-                : 'draft · finalizable'}
+                ? `draft · locks in ${formatDuration(finalizesIn)}`
+                : 'draft · locking in'}
           </span>
         )}
         <span className="card-replies">

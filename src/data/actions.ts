@@ -72,7 +72,6 @@ export interface DebateActions {
   redeemSharesBatch(debateId: number, argumentIds: number[]): Promise<void>;
   claimFees(debateId: number, argumentId: number): Promise<void>;
   // The permissionless pokes: anyone may push a debate along once its time gates open.
-  finalizeArgument(debateId: number, argumentId: number): Promise<void>;
   advancePhase(debateId: number): Promise<void>;
   tallyTree(debateId: number): Promise<void>;
 }
@@ -210,10 +209,6 @@ export async function connectDebateActions(
 
     async claimFees(debateId, argumentId) {
       await write('claimFees', [BigInt(debateId), argumentId]);
-    },
-
-    async finalizeArgument(debateId, argumentId) {
-      await write('finalizeArgument', [BigInt(debateId), argumentId]);
     },
 
     async advancePhase(debateId) {

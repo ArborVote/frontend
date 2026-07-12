@@ -80,15 +80,13 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 80, 10, 'A machine-authored argument');
     expect((await author.userState(0)).tokens).toBe(90);
 
-    // Too early for either poke: advancePhase silently no-ops on-chain, so the
-    // action verifies the effect; finalizeArgument reverts, decoded by name.
+    // Too early to advance: advancePhase silently no-ops on-chain, so the action verifies the effect.
     expect((await keeper.userState(0)).joined).toBe(false);
     await expect(keeper.advancePhase(0)).rejects.toThrow('The debate did not advance');
-    await expect(keeper.finalizeArgument(0, 1)).rejects.toThrow('TimeOutOfBounds');
 
-    // The keeper finalizes it and advances into the Rating phase.
+    // Time passes: the argument finalizes automatically once its window elapses, and the keeper
+    // advances the debate into Rating.
     await warp(timeUnit + 1);
-    await keeper.finalizeArgument(0, 1);
     await warp(7 * timeUnit);
     await keeper.advancePhase(0);
 
@@ -135,18 +133,13 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-    // The keeper finalizes permissionlessly (the move target must be Final).
-    const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
 
     const timeUnit = 60;
     await author.createDebate('A movable thesis', timeUnit);
     await author.join(0);
 
-    // Two drafts directly under the thesis, each with the minimum 10-token deposit.
+    // A draft directly under the thesis, edited while still inside its editing window.
     await author.addArgument(0, 0, 'pro', 60, 10, 'first draft'); // argument 1
-    await author.addArgument(0, 0, 'con', 60, 10, 'second draft'); // argument 2
-
-    // Edit the first draft's text while it is still a Created draft.
     await author.alterArgument(0, 1, 'first draft, edited');
     const edited = (await client.readContract({
       address,
@@ -156,11 +149,12 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     })) as { contentURI: Hex };
     expect(edited.contentURI).toBe(await contentURIOf('first draft, edited'));
 
-    // Finalize argument 1 so it can be a move target, then move argument 2 beneath it,
-    // re-seeding its market at 80% approval (reserves become 2 pro / 8 con).
-    await client.increaseTime({ seconds: timeUnit + 1 });
+    // Argument 1's editing window elapses, so it finalizes automatically and becomes a valid move
+    // target. A fresh draft (argument 2) is then added and moved beneath it, re-seeding its market
+    // at 80% approval (reserves become 2 pro / 8 con).
+    await client.increaseTime({ seconds: 2 * timeUnit });
     await client.mine({ blocks: 1 });
-    await keeper.finalizeArgument(0, 1);
+    await author.addArgument(0, 0, 'con', 60, 10, 'second draft'); // argument 2, a fresh draft
     await author.moveArgument(0, 2, 1, 80);
 
     const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
@@ -205,9 +199,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 50, 10, 'first argument'); // id 1
     await author.addArgument(0, 0, 'pro', 50, 10, 'second argument'); // id 2
 
+    // The arguments finalize automatically once their editing windows elapse.
     await warp(timeUnit + 1);
-    await keeper.finalizeArgument(0, 1);
-    await keeper.finalizeArgument(0, 2);
     await warp(7 * timeUnit);
     await keeper.advancePhase(0);
 

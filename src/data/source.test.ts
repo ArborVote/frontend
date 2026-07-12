@@ -11,47 +11,52 @@ import {
 } from './source';
 
 describe('nodeFromIndex', () => {
-  test('maps an argument row, deriving the approval from the reserves', () => {
-    expect(
-      nodeFromIndex({
-        argumentId: '1',
-        parent_id: '0_0',
-        isSupporting: true,
-        contentURI: '0xabc1',
-        state: 'FINAL',
-        finalizationTime: '90',
-        pro: '21',
-        con: '1',
-        votes: '29',
-        creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-      }),
-    ).toEqual({
+  const row = {
+    argumentId: '1',
+    parent_id: '0_0',
+    isSupporting: true,
+    contentURI: '0xabc1',
+    finalizationTime: '90',
+    pro: '21',
+    con: '1',
+    votes: '29',
+    creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+  };
+
+  test('maps an argument row, deriving the approval from the reserves and finality from the clock', () => {
+    expect(nodeFromIndex(row, 100)).toEqual({
       id: 1,
       parentId: 0,
       side: 'pro',
       contentURI: '0xabc1',
       approval: 1 / 22,
       weight: 29,
-      state: 'final',
+      state: 'final', // chain time 100 is past the finalization time 90
       finalizationTime: 90,
       // Checksummed from the index's lowercase form, matching chain reads.
       creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     });
   });
 
+  test('reads a draft while the chain clock is before its finalization time', () => {
+    expect(nodeFromIndex(row, 89).state).toBe('created');
+  });
+
   test('maps the thesis: no parent, no side, empty market reads as even', () => {
-    const thesis = nodeFromIndex({
-      argumentId: '0',
-      parent_id: null,
-      isSupporting: null,
-      contentURI: '0xabc0',
-      state: 'FINAL',
-      finalizationTime: '0',
-      pro: '0',
-      con: '0',
-      votes: '0',
-      creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-    });
+    const thesis = nodeFromIndex(
+      {
+        argumentId: '0',
+        parent_id: null,
+        isSupporting: null,
+        contentURI: '0xabc0',
+        finalizationTime: '0',
+        pro: '0',
+        con: '0',
+        votes: '0',
+        creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+      },
+      100,
+    );
     expect(thesis.parentId).toBeNull();
     expect(thesis.side).toBeNull();
     expect(thesis.approval).toBe(0.5);

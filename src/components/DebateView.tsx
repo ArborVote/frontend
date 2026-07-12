@@ -3,12 +3,11 @@ import type { ArgumentPosition } from '../data/actions';
 import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
-import { ancestryOf, childrenOf, finalizable, liveChainTime, thesisOf } from '../types';
+import { ancestryOf, childrenOf, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
-import { FinalizePanel } from './FinalizePanel';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
@@ -39,8 +38,6 @@ export interface DebateTx {
   /** Redeems the account's shares across several arguments in one transaction. */
   redeemBatch(argumentIds: number[]): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
-  /** Permissionless - available to any connected account, joined or not. */
-  finalize(argumentId: number): Promise<void>;
 }
 
 /** A short label identifying an argument as a move target. */
@@ -192,18 +189,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
               </>
             )}
           </p>
-        )}
-        {draft && tx && (
-          <FinalizePanel
-            key={focus.id}
-            eligible={finalizable(focus, debate, now)}
-            opensIn={
-              debate.timing
-                ? Math.max(0, focus.finalizationTime - liveChainTime(debate.timing, now))
-                : undefined
-            }
-            onFinalize={() => tx.finalize(focus.id)}
-          />
         )}
         {ownDraft && tx && (
           <DraftControls

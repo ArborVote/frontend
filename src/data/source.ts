@@ -34,8 +34,6 @@ const PHASE_BY_STATUS: Record<number, Phase> = {
   4: 'finished',
 };
 
-const STATE_CREATED = 1;
-
 interface OnChainArgument {
   contentURI: Hex;
   creator: Address;
@@ -145,7 +143,8 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
                 weight: argument.votes,
                 rawState: argument.state,
-                state: argument.state === STATE_CREATED ? ('created' as const) : ('final' as const),
+                // Final-ness is by time: an argument locks in automatically once its editing window elapses.
+                state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
                 finalizationTime: Number(argument.finalizationTime),
                 creator: argument.creator,
               };
@@ -267,7 +266,6 @@ export interface IndexedArgumentRow {
   parent_id: string | null;
   isSupporting: boolean | null;
   contentURI: string;
-  state: string;
   finalizationTime: string;
   pro: string;
   con: string;
@@ -275,10 +273,18 @@ export interface IndexedArgumentRow {
   creator: string;
 }
 
-/** Maps an indexer row to a debate node; the text still needs resolving from the contentURI. */
-export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text'> & { contentURI: Hex } {
+/**
+ * Maps an indexer row to a debate node; the text still needs resolving from the contentURI.
+ * Final-ness is derived from `chainTime` (the indexer stores no argument state) — an argument
+ * locks in automatically once its editing window elapses.
+ */
+export function nodeFromIndex(
+  row: IndexedArgumentRow,
+  chainTime: number,
+): Omit<ArgumentNode, 'text'> & { contentURI: Hex } {
   const con = Number(row.con);
   const marketSize = Number(row.pro) + con;
+  const finalizationTime = Number(row.finalizationTime);
   return {
     id: Number(row.argumentId),
     // Argument entity IDs are `{debateId}_{argumentId}`; the thesis has no parent.
@@ -287,8 +293,8 @@ export function nodeFromIndex(row: IndexedArgumentRow): Omit<ArgumentNode, 'text
     contentURI: row.contentURI as Hex,
     approval: marketSize === 0 ? 0.5 : con / marketSize,
     weight: Number(row.votes),
-    state: row.state === 'CREATED' ? 'created' : 'final',
-    finalizationTime: Number(row.finalizationTime),
+    state: chainTime >= finalizationTime ? 'final' : 'created',
+    finalizationTime,
     // The index stores addresses lowercased; checksum to match the chain reads.
     creator: getAddress(row.creator),
   };
@@ -329,7 +335,7 @@ export function summaryFromIndex(
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime approved }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
-    argumentId parent_id isSupporting contentURI state finalizationTime pro con votes creator
+    argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator
   }
 }`;
 
@@ -381,9 +387,13 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
         throw new Error(`Debate ${debateId} is not in the index (yet)`);
       }
 
+      // The chain clock derives every argument's final-ness (the index stores no state):
+      // at least the head, at least the wall.
+      const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
+
       const nodes: ArgumentNode[] = await Promise.all(
         data.Argument.map(async (row) => {
-          const { contentURI, ...node } = nodeFromIndex(row);
+          const { contentURI, ...node } = nodeFromIndex(row, chainTime);
           return { ...node, text: await contentToText(contentURI, ipfsGateway) };
         }),
       );
@@ -395,8 +405,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
         timing: {
           editingEndTime: Number(debate.editingEndTime),
           ratingEndTime: Number(debate.ratingEndTime),
-          // Same estimate as the contract source: at least the head, at least the wall.
-          chainTime: Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000)),
+          chainTime,
           loadedAt: Math.floor(Date.now() / 1000),
         },
         approved: debate.approved ?? undefined,

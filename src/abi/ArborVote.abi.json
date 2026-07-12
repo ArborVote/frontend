@@ -171,24 +171,6 @@
  },
  {
   "type": "function",
-  "name": "finalizeArgument",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "internalType": "uint256"
-   },
-   {
-    "name": "argumentId",
-    "type": "uint16",
-    "internalType": "uint16"
-   }
-  ],
-  "outputs": [],
-  "stateMutability": "nonpayable"
- },
- {
-  "type": "function",
   "name": "getArgument",
   "inputs": [
    {
@@ -764,25 +746,6 @@
  },
  {
   "type": "event",
-  "name": "ArgumentFinalized",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "indexed": true,
-    "internalType": "uint256"
-   },
-   {
-    "name": "argumentId",
-    "type": "uint16",
-    "indexed": true,
-    "internalType": "uint16"
-   }
-  ],
-  "anonymous": false
- },
- {
-  "type": "event",
   "name": "ArgumentImpactCalculated",
   "inputs": [
    {
@@ -1104,6 +1067,28 @@
   "inputs": [
    {
     "name": "limit",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ArgumentNotDraft",
+  "inputs": [
+   {
+    "name": "argumentId",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ArgumentNotFinal",
+  "inputs": [
+   {
+    "name": "argumentId",
     "type": "uint16",
     "internalType": "uint16"
    }

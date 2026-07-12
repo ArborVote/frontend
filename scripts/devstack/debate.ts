@@ -1,8 +1,9 @@
 /**
  * Debate scripts: a debate written down as the actions of its participants, and a runner
  * that replays it on-chain as if each persona performed their steps themselves - every
- * persona acts from its own account, joins the debate before its first action, and due
- * arguments are finalized whenever time advances.
+ * persona acts from its own account and joins the debate before its first action.
+ * Arguments finalize automatically once their editing window elapses, so a child add
+ * simply follows a wait step past its parent's window.
  */
 
 import { createTestClient, http, publicActions, walletActions, type Abi, type Address, type Hex } from 'viem';
@@ -61,8 +62,6 @@ export interface DebateScript {
 /** anvil's default, publicly known development mnemonic - local use only. */
 const ANVIL_MNEMONIC = 'test test test test test test test test test test test junk';
 
-const STATE_CREATED = 1;
-const STATE_FINAL = 2;
 
 export function anvilAccount(index: number): HDAccount {
   return mnemonicToAccount(ANVIL_MNEMONIC, { addressIndex: index });
@@ -161,28 +160,12 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
     return id;
   };
 
-  /** Finalizes every known argument whose finalization time has passed, as any user would. */
-  const finalizeDue = async (): Promise<void> => {
-    const now = Number((await client.getBlock()).timestamp);
-    for (const [key, id] of argumentIds) {
-      if (id === 0) {
-        continue; // the thesis is final from creation
-      }
-      const argument = await getArgument(id);
-      if (argument.state === STATE_CREATED && Number(argument.finalizationTime) <= now) {
-        await act(script.creator, 'finalizeArgument', [debateId, id]);
-        log(`"${key}" is finalized`);
-      }
-    }
-  };
-
   for (const step of script.steps) {
     switch (step.kind) {
       case 'wait': {
         await client.increaseTime({ seconds: step.timeUnits * script.timeUnitSeconds + 1 });
         await client.mine({ blocks: 1 });
         log(`time advances by ${step.timeUnits} unit(s)`);
-        await finalizeDue();
         break;
       }
       case 'add': {
@@ -190,8 +173,12 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
           throw new Error(`debate script defines argument "${step.key}" twice`);
         }
         const parentId = argumentId(step.parent);
-        if ((await getArgument(parentId)).state !== STATE_FINAL) {
-          throw new Error(`parent "${step.parent}" of "${step.key}" is not final - add a wait step first`);
+        // A parent is final once its editing window has elapsed (the thesis from creation), which is
+        // what lets a child attach - so a child add must follow a wait past the parent's window.
+        const parent = await getArgument(parentId);
+        const now = Number((await client.getBlock()).timestamp);
+        if (Number(parent.finalizationTime) > now) {
+          throw new Error(`parent "${step.parent}" of "${step.key}" is not final yet - add a wait step first`);
         }
         await join(step.user);
         const deposit = step.deposit ?? 10;

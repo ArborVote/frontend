@@ -16,8 +16,9 @@ export interface ArgumentNode {
   approval: number;
   /** Vote tokens staked on this argument's market. */
   weight: number;
+  /** Derived from the clock: `final` once `finalizationTime` has passed, `created` (draft) before. */
   state: ArgumentState;
-  /** Chain time (unix seconds) from which the argument can be finalized; 0 once final. */
+  /** Chain time (unix seconds) from which the argument is final: locked in, tradeable, and tallied. */
   finalizationTime: number;
   /**
    * The creator's checksummed address (the thesis' creator created the debate).
@@ -126,15 +127,6 @@ export function availablePhasePoke(debate: Debate, now?: number): PhasePoke | nu
   if (stuckInRating && time > ratingEndTime) return { kind: 'advance', target: 'tallying' };
   if (stuckInEditing && time > editingEndTime) return { kind: 'advance', target: 'rating' };
   return null;
-}
-
-/** Whether the permissionless finalize poke is open for this argument (`now` as above). */
-export function finalizable(node: ArgumentNode, debate: Debate, now?: number): boolean {
-  if (node.state !== 'created' || debate.phase === 'finished' || debate.timing === undefined) {
-    return false;
-  }
-  const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
-  return time >= node.finalizationTime;
 }
 
 export function thesisOf(debate: Debate): ArgumentNode {
