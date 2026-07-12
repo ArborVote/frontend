@@ -93,9 +93,9 @@ just ipfs-down   # stop it
 Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
 
 - **Join** the debate from the header (the token balance replaces the button once joined).
-- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`.
+- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`. The author picks the deposit (at least the minimum) — a larger stake deepens the market and gives the argument more starting weight.
 - **Rate arguments** during Rating: stake vote tokens on the focused argument being under- or overrated.
-- **After the debate**: redeem your shares and claim creator fees from the focused argument.
+- **After the debate**: redeem your shares and claim creator fees from the focused argument, or redeem across every argument you hold at once from the finished-debate banner (`redeemArgumentSharesBatch`, its argumentIds read from the indexer's per-participant positions).
 
 The contract's **permissionless pokes** are surfaced too, so a debate progresses without scripts — any connected account may trigger them, joined or not. Draft arguments carry a dashed *draft* chip; focusing one offers *Finalize argument* once its editing window has passed. When a phase deadline passes, a poke appears next to the phase chip in the header (*Start rating*, *Start tallying*, and in Tallying *Tally the debate*, which computes the outcome and finishes the debate). The app polls the chain every 30 seconds, so newly opened gates and other participants' moves show up on their own.
 
