@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { rpcUp } from '../../scripts/devstack/anvil';
-import type { Debate, DebateSummary } from '../types';
+import type { AccountPosition, Debate, DebateSummary } from '../types';
 import {
   contractSource,
   indexerSource,
@@ -83,6 +83,7 @@ describe('summaryFromIndex', () => {
 describe('withFallback', () => {
   const debate = { id: 0, phase: 'rating', nodes: [] } as unknown as Debate;
   const summaries = [{ id: 0 }] as unknown as DebateSummary[];
+  const positions: AccountPosition[] = [{ argumentId: 1, proShares: 3, conShares: 0 }];
   const source = (result: Debate | Error): DebateSource => ({
     load: async () => {
       if (result instanceof Error) throw result;
@@ -92,16 +93,26 @@ describe('withFallback', () => {
       if (result instanceof Error) throw result;
       return summaries;
     },
+    positions: async () => {
+      if (result instanceof Error) throw result;
+      return positions;
+    },
   });
 
   test('serves from the primary while it works', async () => {
     expect(await withFallback(source(debate), source(new Error('unused'))).load(0)).toBe(debate);
     expect(await withFallback(source(debate), source(new Error('unused'))).list()).toBe(summaries);
+    expect(await withFallback(source(debate), source(new Error('unused'))).positions(0, '0xabc')).toBe(
+      positions,
+    );
   });
 
   test('falls back when the primary fails', async () => {
     expect(await withFallback(source(new Error('indexer down')), source(debate)).load(0)).toBe(debate);
     expect(await withFallback(source(new Error('indexer down')), source(debate)).list()).toBe(summaries);
+    expect(
+      await withFallback(source(new Error('indexer down')), source(debate)).positions(0, '0xabc'),
+    ).toBe(positions);
   });
 });
 

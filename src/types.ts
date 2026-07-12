@@ -73,6 +73,13 @@ export interface DebateSummary {
   creator?: string;
 }
 
+/** An account's share holding in one argument's market, for the batch-redeem flow. */
+export interface AccountPosition {
+  argumentId: number;
+  proShares: number;
+  conShares: number;
+}
+
 /** How the browse list is ordered: newest first, or most-staked first. */
 export type DebateSort = 'recent' | 'stake';
 

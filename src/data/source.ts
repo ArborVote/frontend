@@ -1,7 +1,7 @@
 import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
-import type { ArgumentNode, Debate, DebateSummary, Phase } from '../types';
+import type { AccountPosition, ArgumentNode, Debate, DebateSummary, Phase } from '../types';
 import { thesisOf } from '../types';
 import { climateDebate } from './climateDebate';
 import { contractConfig } from './config';
@@ -9,6 +9,8 @@ import { contractConfig } from './config';
 export interface DebateSource {
   load(debateId: number): Promise<Debate>;
   list(): Promise<DebateSummary[]>;
+  /** The account's share holdings across a debate's arguments, for the batch-redeem flow. */
+  positions(debateId: number, account: string): Promise<AccountPosition[]>;
 }
 
 export const mockSource: DebateSource = {
@@ -22,6 +24,7 @@ export const mockSource: DebateSource = {
       argumentsCount: climateDebate.nodes.length,
     },
   ],
+  positions: async () => [],
 };
 
 const PHASE_BY_STATUS: Record<number, Phase> = {
@@ -210,6 +213,37 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         }),
       );
     },
+
+    async positions(debateId: number, account: string): Promise<AccountPosition[]> {
+      const id = BigInt(debateId);
+      const [, argumentsCount] = (await client.readContract({
+        address,
+        abi,
+        functionName: 'debates',
+        args: [id],
+      })) as [number, number];
+
+      // Argument ids are contiguous 1..argumentsCount-1 (id 0 is the market-less thesis).
+      const ids = Array.from({ length: Math.max(0, Number(argumentsCount) - 1) }, (_, i) => i + 1);
+      const shares = (await Promise.all(
+        ids.map((argumentId) =>
+          client.readContract({
+            address,
+            abi,
+            functionName: 'getUserShares',
+            args: [id, argumentId, account as Address],
+          }),
+        ),
+      )) as { pro: number; con: number }[];
+
+      return ids
+        .map((argumentId, i) => ({
+          argumentId,
+          proShares: shares[i].pro,
+          conShares: shares[i].con,
+        }))
+        .filter((position) => position.proShares > 0 || position.conShares > 0);
+    },
   };
 }
 
@@ -270,6 +304,13 @@ export interface IndexedDebateSummaryRow {
   argumentsCount: string;
 }
 
+/** A raw indexer position row for the batch-redeem flow; `argument_id` is `{debateId}_{argumentId}`. */
+export interface IndexedPositionRow {
+  argument_id: string;
+  proShares: string;
+  conShares: string;
+}
+
 /** Maps an indexer row to a browse-list summary; the thesis text still needs resolving. */
 export function summaryFromIndex(
   row: IndexedDebateSummaryRow,
@@ -294,6 +335,10 @@ const INDEXER_QUERY = `query DebateTree($debateId: String!) {
 
 const INDEXER_LIST_QUERY = `query DebateList {
   Debate { id creator contentURI phase totalVotes argumentsCount }
+}`;
+
+const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
+  Position(where: { participant_id: { _eq: $participantId } }) { argument_id proShares conShares }
 }`;
 
 /**
@@ -369,6 +414,19 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       // Debate entity IDs are strings, so Hasura cannot order them numerically.
       return summaries.sort((a, b) => a.id - b.id);
     },
+
+    async positions(debateId: number, account: string): Promise<AccountPosition[]> {
+      // The indexer keys positions by participant (`{debateId}_{account}`, address lowercased),
+      // exactly the account's share holdings across this debate's arguments.
+      const data = await graphql<{ Position: IndexedPositionRow[] }>(INDEXER_POSITIONS_QUERY, {
+        participantId: `${debateId}_${account.toLowerCase()}`,
+      });
+      return data.Position.map((row) => ({
+        argumentId: Number(row.argument_id.split('_')[1]),
+        proShares: Number(row.proShares),
+        conShares: Number(row.conShares),
+      })).filter((position) => position.proShares > 0 || position.conShares > 0);
+    },
   };
 }
 
@@ -387,6 +445,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
   return {
     load: guarded((source) => source.load.bind(source)),
     list: guarded((source) => source.list.bind(source)),
+    positions: guarded((source) => source.positions.bind(source)),
   };
 }
 

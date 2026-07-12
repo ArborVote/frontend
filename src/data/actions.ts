@@ -68,6 +68,8 @@ export interface DebateActions {
   ): Promise<void>;
   stake(debateId: number, argumentId: number, side: Side, amount: number): Promise<void>;
   redeemShares(debateId: number, argumentId: number): Promise<void>;
+  /** Redeems the account's shares across several arguments of a finished debate in one transaction. */
+  redeemSharesBatch(debateId: number, argumentIds: number[]): Promise<void>;
   claimFees(debateId: number, argumentId: number): Promise<void>;
   // The permissionless pokes: anyone may push a debate along once its time gates open.
   finalizeArgument(debateId: number, argumentId: number): Promise<void>;
@@ -200,6 +202,10 @@ export async function connectDebateActions(
 
     async redeemShares(debateId, argumentId) {
       await write('redeemArgumentShares', [BigInt(debateId), argumentId, account]);
+    },
+
+    async redeemSharesBatch(debateId, argumentIds) {
+      await write('redeemArgumentSharesBatch', [BigInt(debateId), argumentIds, account]);
     },
 
     async claimFees(debateId, argumentId) {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
-import type { Debate, Side } from '../types';
+import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, finalizable, liveChainTime, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
@@ -12,6 +12,7 @@ import { FinalizePanel } from './FinalizePanel';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
+import { RedeemAllPanel } from './RedeemAllPanel';
 
 /** The debate interactions available to the connected, joined account. */
 export interface DebateTx {
@@ -32,7 +33,11 @@ export interface DebateTx {
   moveArgument(argumentId: number, newParentArgumentId: number, initialApproval: number): Promise<void>;
   stake(argumentId: number, side: Side, amount: number): Promise<void>;
   position(argumentId: number): Promise<ArgumentPosition>;
+  /** The account's share holdings across the debate (from the indexer, chain fallback). */
+  loadPositions(): Promise<AccountPosition[]>;
   redeem(argumentId: number): Promise<void>;
+  /** Redeems the account's shares across several arguments in one transaction. */
+  redeemBatch(argumentIds: number[]): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
   /** Permissionless - available to any connected account, joined or not. */
   finalize(argumentId: number): Promise<void>;
@@ -130,6 +135,10 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
     <main className="debate">
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
+
+      {tx && tx.joined && debate.phase === 'finished' && (
+        <RedeemAllPanel loadPositions={tx.loadPositions} onRedeemAll={tx.redeemBatch} />
+      )}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
         <p className="focus-kicker">

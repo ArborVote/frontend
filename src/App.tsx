@@ -249,8 +249,13 @@ export default function App() {
         await refresh();
       },
       position: (argumentId) => actions.position(debateId, argumentId),
+      loadPositions: () => source.positions(debateId, actions.account),
       redeem: async (argumentId) => {
         await actions.redeemShares(debateId, argumentId);
+        await refresh();
+      },
+      redeemBatch: async (argumentIds) => {
+        await actions.redeemSharesBatch(debateId, argumentIds);
         await refresh();
       },
       claimFees: async (argumentId) => {

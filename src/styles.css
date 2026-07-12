@@ -760,6 +760,18 @@ button {
   color: var(--con);
 }
 
+.redeem-all {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.6rem;
+}
+
 /* ── Browse (home) ───────────────────────────────────────────────────── */
 .browse {
   max-width: 46rem;
