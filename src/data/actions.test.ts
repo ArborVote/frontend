@@ -155,13 +155,16 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     })) as { contentURI: Hex };
     expect(edited.contentURI).toBe(await contentURIOf('first draft, edited'));
 
-    // Finalize argument 1 so it can be a move target, then move argument 2 beneath it.
+    // Finalize argument 1 so it can be a move target, then move argument 2 beneath it,
+    // re-seeding its market at 80% approval (reserves become 2 pro / 8 con).
     await client.increaseTime({ seconds: timeUnit + 1 });
     await client.mine({ blocks: 1 });
     await keeper.finalizeArgument(0, 1);
-    await author.moveArgument(0, 2, 1);
+    await author.moveArgument(0, 2, 1, 80);
 
-    const debate = await contractSource(address, RPC_URL).load(0);
-    expect(debate.nodes.find((node) => node.id === 2)?.parentId).toBe(1);
+    const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
+    expect(moved?.parentId).toBe(1);
+    // Approval is the pro-share price con/(pro+con) = 8/10.
+    expect(moved?.approval).toBeCloseTo(0.8, 5);
   }, 30_000);
 });

@@ -9,23 +9,27 @@ export interface MoveTarget {
 
 /**
  * Owner-only controls for a still-draft argument during Editing: edit its text, or
- * move it beneath a different finalized argument. The argument keeps its pro/con
- * stance when moved. Both run through the content pipeline / contract.
+ * move it beneath a different finalized argument. Moving keeps the pro/con stance and
+ * re-seeds the market at a chosen approval. Both run through the content pipeline / contract.
  */
 export function DraftControls({
   text,
+  currentApproval,
   moveTargets,
   onEdit,
   onMove,
 }: {
   text: string;
+  /** The argument's current approval as a percentage; the move slider defaults to it. */
+  currentApproval: number;
   moveTargets: MoveTarget[];
   onEdit: (text: string) => Promise<void>;
-  onMove: (newParentArgumentId: number) => Promise<void>;
+  onMove: (newParentArgumentId: number, initialApproval: number) => Promise<void>;
 }) {
   const [mode, setMode] = useState<'idle' | 'edit' | 'move'>('idle');
   const [draft, setDraft] = useState(text);
   const [parentId, setParentId] = useState<number | ''>(moveTargets[0]?.id ?? '');
+  const [approval, setApproval] = useState(currentApproval);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,7 +106,7 @@ export function DraftControls({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (parentId !== '') void run(() => onMove(parentId));
+    if (parentId !== '') void run(() => onMove(parentId, approval));
   };
   return (
     <form className="composer" onSubmit={submit}>
@@ -116,7 +120,19 @@ export function DraftControls({
           ))}
         </select>
       </label>
-      <p className="action-hint">The argument keeps its pro/con stance under the new parent.</p>
+      <label className="composer-approval">
+        Initial approval <strong className="mono">{approval}%</strong>
+        <input
+          type="range"
+          min={50}
+          max={99}
+          value={approval}
+          onChange={(event) => setApproval(Number(event.target.value))}
+        />
+      </label>
+      <p className="action-hint">
+        Keeps its pro/con stance and re-seeds its rating at this approval under the new parent.
+      </p>
       <div className="action-row">
         <button type="submit" className="btn btn-solid" disabled={busy || parentId === ''}>
           {busy ? 'Moving…' : 'Move here'}

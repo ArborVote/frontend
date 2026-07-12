@@ -55,8 +55,16 @@ export interface DebateActions {
   ): Promise<void>;
   /** Edits a still-draft argument's text (creator only, Editing phase). */
   alterArgument(debateId: number, argumentId: number, text: string): Promise<void>;
-  /** Moves a still-draft argument below a finalized parent (creator only, Editing phase). */
-  moveArgument(debateId: number, argumentId: number, newParentArgumentId: number): Promise<void>;
+  /**
+   * Moves a still-draft argument below a finalized parent, re-seeding its market at
+   * `initialApproval` (creator only, Editing phase). Pass the current approval to keep it.
+   */
+  moveArgument(
+    debateId: number,
+    argumentId: number,
+    newParentArgumentId: number,
+    initialApproval: number,
+  ): Promise<void>;
   stake(debateId: number, argumentId: number, side: Side, amount: number): Promise<void>;
   redeemShares(debateId: number, argumentId: number): Promise<void>;
   claimFees(debateId: number, argumentId: number): Promise<void>;
@@ -180,8 +188,8 @@ export async function connectDebateActions(
       await write('alterArgument', [BigInt(debateId), argumentId, contentURI]);
     },
 
-    async moveArgument(debateId, argumentId, newParentArgumentId) {
-      await write('moveArgument', [BigInt(debateId), argumentId, newParentArgumentId]);
+    async moveArgument(debateId, argumentId, newParentArgumentId, initialApproval) {
+      await write('moveArgument', [BigInt(debateId), argumentId, newParentArgumentId, initialApproval]);
     },
 
     async stake(debateId, argumentId, side, amount) {

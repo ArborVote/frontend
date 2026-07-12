@@ -240,8 +240,8 @@ export default function App() {
         await actions.alterArgument(debateId, argumentId, text);
         await refresh();
       },
-      moveArgument: async (argumentId, newParentArgumentId) => {
-        await actions.moveArgument(debateId, argumentId, newParentArgumentId);
+      moveArgument: async (argumentId, newParentArgumentId, initialApproval) => {
+        await actions.moveArgument(debateId, argumentId, newParentArgumentId, initialApproval);
         await refresh();
       },
       stake: async (argumentId, side, amount) => {

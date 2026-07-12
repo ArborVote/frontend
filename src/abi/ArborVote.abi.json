@@ -412,6 +412,11 @@
     "name": "newParentArgumentId",
     "type": "uint16",
     "internalType": "uint16"
+   },
+   {
+    "name": "initialApproval",
+    "type": "uint32",
+    "internalType": "uint32"
    }
   ],
   "outputs": [],
@@ -800,6 +805,18 @@
     "type": "uint16",
     "indexed": false,
     "internalType": "uint16"
+   },
+   {
+    "name": "pro",
+    "type": "uint32",
+    "indexed": false,
+    "internalType": "uint32"
+   },
+   {
+    "name": "con",
+    "type": "uint32",
+    "indexed": false,
+    "internalType": "uint32"
    }
   ],
   "anonymous": false

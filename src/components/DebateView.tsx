@@ -22,8 +22,8 @@ export interface DebateTx {
   addArgument(parentArgumentId: number, side: Side, initialApproval: number, text: string): Promise<void>;
   /** Edit a still-draft argument's text (creator only). */
   alterArgument(argumentId: number, text: string): Promise<void>;
-  /** Move a still-draft argument beneath a finalized parent (creator only). */
-  moveArgument(argumentId: number, newParentArgumentId: number): Promise<void>;
+  /** Move a still-draft argument beneath a finalized parent, re-seeding its rating (creator only). */
+  moveArgument(argumentId: number, newParentArgumentId: number, initialApproval: number): Promise<void>;
   stake(argumentId: number, side: Side, amount: number): Promise<void>;
   position(argumentId: number): Promise<ArgumentPosition>;
   redeem(argumentId: number): Promise<void>;
@@ -194,9 +194,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           <DraftControls
             key={focus.id}
             text={focus.text}
+            currentApproval={Math.round(focus.approval * 100)}
             moveTargets={moveTargets}
             onEdit={(text) => tx.alterArgument(focus.id, text)}
-            onMove={(newParentArgumentId) => tx.moveArgument(focus.id, newParentArgumentId)}
+            onMove={(newParentArgumentId, initialApproval) =>
+              tx.moveArgument(focus.id, newParentArgumentId, initialApproval)
+            }
           />
         )}
         {rating && tx && (
