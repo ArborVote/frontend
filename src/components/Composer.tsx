@@ -14,7 +14,7 @@ export function Composer({
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
-  const [approval, setApproval] = useState(70);
+  const [approval, setApproval] = useState(50);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
