@@ -43,8 +43,6 @@ export interface DebateActions {
   account: Address;
   /** Creates a debate around a thesis and returns the new debate's ID. */
   createDebate(thesis: string, timeUnitSeconds: number): Promise<number>;
-  userState(debateId: number): Promise<UserState>;
-  position(debateId: number, argumentId: number): Promise<ArgumentPosition>;
   join(debateId: number): Promise<void>;
   addArgument(
     debateId: number,
@@ -76,8 +74,6 @@ export interface DebateActions {
   tallyTree(debateId: number): Promise<void>;
 }
 
-const PARTICIPANT_ROLE = 1;
-
 export async function connectDebateActions(
   config: ContractConfig,
   provider: EIP1193Provider,
@@ -98,14 +94,6 @@ export async function connectDebateActions(
     rpcUrls: { default: { http: [config.rpcUrl] } },
   });
   const walletClient = createWalletClient({ account, chain, transport: custom(provider) });
-
-  const read = async <T>(functionName: string, args: unknown[]): Promise<T> =>
-    (await publicClient.readContract({
-      address: config.address,
-      abi: abi as Abi,
-      functionName,
-      args,
-    })) as T;
 
   // Simulates (surfacing reverts before any signature), sends, and waits for the
   // receipt. Returns the receipt so callers can read the *mined* effects from the
@@ -151,23 +139,6 @@ export async function connectDebateActions(
         throw new Error('The debate was created but its id could not be read from the transaction.');
       }
       return Number(debateId);
-    },
-
-    async userState(debateId) {
-      const [role, tokens] = await Promise.all([
-        read<number>('getUserRole', [BigInt(debateId), account]),
-        read<number>('getUserTokens', [BigInt(debateId), account]),
-      ]);
-      return { joined: role === PARTICIPANT_ROLE, tokens };
-    },
-
-    async position(debateId, argumentId) {
-      const [shares, argument] = await Promise.all([
-        read<{ pro: number; con: number }>('getUserShares', [BigInt(debateId), argumentId, account]),
-        read<{ creator: Address; fees: number }>('getArgument', [BigInt(debateId), argumentId]),
-      ]);
-      const isCreator = argument.creator.toLowerCase() === account.toLowerCase();
-      return { proShares: shares.pro, conShares: shares.con, claimableFees: isCreator ? argument.fees : 0 };
     },
 
     async join(debateId) {

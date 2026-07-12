@@ -89,6 +89,7 @@ describe('withFallback', () => {
   const debate = { id: 0, phase: 'rating', nodes: [] } as unknown as Debate;
   const summaries = [{ id: 0 }] as unknown as DebateSummary[];
   const positions: AccountPosition[] = [{ argumentId: 1, proShares: 3, conShares: 0 }];
+  const userState = { joined: true, tokens: 90 };
   const source = (result: Debate | Error): DebateSource => ({
     load: async () => {
       if (result instanceof Error) throw result;
@@ -97,6 +98,14 @@ describe('withFallback', () => {
     list: async () => {
       if (result instanceof Error) throw result;
       return summaries;
+    },
+    userState: async () => {
+      if (result instanceof Error) throw result;
+      return userState;
+    },
+    argumentPosition: async () => {
+      if (result instanceof Error) throw result;
+      return { proShares: 0, conShares: 0, claimableFees: 0 };
     },
     positions: async () => {
       if (result instanceof Error) throw result;
@@ -110,6 +119,9 @@ describe('withFallback', () => {
     expect(await withFallback(source(debate), source(new Error('unused'))).positions(0, '0xabc')).toBe(
       positions,
     );
+    expect(await withFallback(source(debate), source(new Error('unused'))).userState(0, '0xabc')).toBe(
+      userState,
+    );
   });
 
   test('falls back when the primary fails', async () => {
@@ -118,6 +130,9 @@ describe('withFallback', () => {
     expect(
       await withFallback(source(new Error('indexer down')), source(debate)).positions(0, '0xabc'),
     ).toBe(positions);
+    expect(
+      await withFallback(source(new Error('indexer down')), source(debate)).userState(0, '0xabc'),
+    ).toBe(userState);
   });
 });
 

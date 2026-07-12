@@ -31,6 +31,10 @@ const POKE_LABEL: Record<Phase, string> = {
 const SYNC_RETRY_MS = 2000;
 const SYNC_MAX_RETRIES = 15; // ~30 s, comfortably longer than the usual lag
 
+// The vote tokens the contract grants on joining (Parameters.INITIAL_TOKENS); lets a join reflect
+// immediately without waiting on the indexer to process the Joined event.
+const INITIAL_TOKENS = 100;
+
 /** `#/debate/N` opens a debate; anything else is the browse home. */
 function routeFromHash(): number | null {
   const match = /^#\/debate\/(\d+)$/.exec(window.location.hash);
@@ -98,6 +102,9 @@ export default function App() {
   const awaitingCreateRef = useRef<number | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const loadAttemptRef = useRef(0);
+  // Set when we optimistically mark the account joined on a successful join tx, so a lagging
+  // indexer read does not revert it before the Joined event is processed.
+  const optimisticJoinRef = useRef(false);
   const refresh = useCallback(async () => {
     const seq = ++loadSeq.current;
     const target = debateIdRef.current;
@@ -118,7 +125,7 @@ export default function App() {
     const connected = actionsRef.current;
     const [debateResult, stateResult] = await Promise.allSettled([
       source.load(target),
-      connected ? connected.userState(target) : Promise.resolve(null),
+      connected ? source.userState(target, connected.account) : Promise.resolve(null),
     ]);
     // Drop the response if a newer refresh started or the route changed underneath us.
     if (seq !== loadSeq.current || debateIdRef.current !== target) return;
@@ -144,7 +151,12 @@ export default function App() {
         awaitingCreateRef.current = null;
       }
     }
-    setUserState(stateResult.status === 'fulfilled' ? stateResult.value : null);
+    const nextState = stateResult.status === 'fulfilled' ? stateResult.value : null;
+    // A just-joined account may not be in the index yet; keep the optimistic joined state rather
+    // than let a lagging read revert it. Clear the guard once the index confirms the join.
+    if (optimisticJoinRef.current && nextState !== null && !nextState.joined) return;
+    if (nextState?.joined) optimisticJoinRef.current = false;
+    setUserState(nextState);
   }, []);
 
   // Route changes drop the previous view's data and reload for the new route.
@@ -186,7 +198,10 @@ export default function App() {
     setJoinError(null);
     try {
       await actions.join(debateId);
-      await refresh();
+      // Joining grants a fixed token allotment; reflect it immediately rather than waiting on the
+      // indexer to catch up with the Joined event (the tree is unchanged, so no reload is needed).
+      optimisticJoinRef.current = true;
+      setUserState({ joined: true, tokens: INITIAL_TOKENS });
     } catch (cause) {
       setJoinError(actionErrorMessage(cause));
     } finally {
@@ -248,7 +263,7 @@ export default function App() {
         await actions.stake(debateId, argumentId, side, amount);
         await refresh();
       },
-      position: (argumentId) => actions.position(debateId, argumentId),
+      position: (argumentId) => source.argumentPosition(debateId, argumentId, actions.account),
       loadPositions: () => source.positions(debateId, actions.account),
       redeem: async (argumentId) => {
         await actions.redeemShares(debateId, argumentId);

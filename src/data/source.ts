@@ -3,12 +3,20 @@ import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import type { AccountPosition, ArgumentNode, Debate, DebateSummary, Phase } from '../types';
 import { thesisOf } from '../types';
+import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate } from './climateDebate';
 import { contractConfig } from './config';
+
+/** The `User.Role` enum value for a joined participant (Unassigned = 0, Participant = 1). */
+const PARTICIPANT_ROLE = 1;
 
 export interface DebateSource {
   load(debateId: number): Promise<Debate>;
   list(): Promise<DebateSummary[]>;
+  /** The account's role and vote-token balance in a debate. */
+  userState(debateId: number, account: string): Promise<UserState>;
+  /** The account's shares in one argument, plus its claimable creator fees. */
+  argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition>;
   /** The account's share holdings across a debate's arguments, for the batch-redeem flow. */
   positions(debateId: number, account: string): Promise<AccountPosition[]>;
 }
@@ -24,6 +32,8 @@ export const mockSource: DebateSource = {
       argumentsCount: climateDebate.nodes.length,
     },
   ],
+  userState: async () => ({ joined: false, tokens: 0 }),
+  argumentPosition: async () => ({ proShares: 0, conShares: 0, claimableFees: 0 }),
   positions: async () => [],
 };
 
@@ -213,6 +223,25 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       );
     },
 
+    async userState(debateId: number, account: string): Promise<UserState> {
+      const id = BigInt(debateId);
+      const [role, tokens] = (await Promise.all([
+        client.readContract({ address, abi, functionName: 'getUserRole', args: [id, account as Address] }),
+        client.readContract({ address, abi, functionName: 'getUserTokens', args: [id, account as Address] }),
+      ])) as [number, number];
+      return { joined: role === PARTICIPANT_ROLE, tokens };
+    },
+
+    async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {
+      const id = BigInt(debateId);
+      const [shares, argument] = (await Promise.all([
+        client.readContract({ address, abi, functionName: 'getUserShares', args: [id, argumentId, account as Address] }),
+        client.readContract({ address, abi, functionName: 'getArgument', args: [id, argumentId] }),
+      ])) as [{ pro: number; con: number }, { creator: Address; fees: number }];
+      const isCreator = argument.creator.toLowerCase() === account.toLowerCase();
+      return { proShares: shares.pro, conShares: shares.con, claimableFees: isCreator ? argument.fees : 0 };
+    },
+
     async positions(debateId: number, account: string): Promise<AccountPosition[]> {
       const id = BigInt(debateId);
       const [, argumentsCount] = (await client.readContract({
@@ -347,6 +376,15 @@ const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!)
   Position(where: { participant_id: { _eq: $participantId } }) { argument_id proShares conShares }
 }`;
 
+const INDEXER_USER_STATE_QUERY = `query UserState($participantId: String!) {
+  Participant(where: { id: { _eq: $participantId } }) { tokens }
+}`;
+
+const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: String!, $argumentId: String!) {
+  Position(where: { id: { _eq: $positionId } }) { proShares conShares }
+  Argument(where: { id: { _eq: $argumentId } }) { creator fees }
+}`;
+
 /**
  * Reads a debate from the indexer in one GraphQL query instead of RPC-traversing
  * the tree leaf by leaf. The chain clock still comes from the RPC head block -
@@ -424,6 +462,33 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       return summaries.sort((a, b) => a.id - b.id);
     },
 
+    async userState(debateId: number, account: string): Promise<UserState> {
+      const data = await graphql<{ Participant: Array<{ tokens: string }> }>(INDEXER_USER_STATE_QUERY, {
+        participantId: `${debateId}_${account.toLowerCase()}`,
+      });
+      // A Participant row exists only once the account has joined the debate.
+      const [participant] = data.Participant;
+      return participant ? { joined: true, tokens: Number(participant.tokens) } : { joined: false, tokens: 0 };
+    },
+
+    async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {
+      const data = await graphql<{
+        Position: Array<{ proShares: string; conShares: string }>;
+        Argument: Array<{ creator: string; fees: string }>;
+      }>(INDEXER_ARGUMENT_POSITION_QUERY, {
+        positionId: `${debateId}_${argumentId}_${account.toLowerCase()}`,
+        argumentId: `${debateId}_${argumentId}`,
+      });
+      const [position] = data.Position;
+      const [argument] = data.Argument;
+      const isCreator = argument !== undefined && argument.creator.toLowerCase() === account.toLowerCase();
+      return {
+        proShares: position ? Number(position.proShares) : 0,
+        conShares: position ? Number(position.conShares) : 0,
+        claimableFees: isCreator ? Number(argument.fees) : 0,
+      };
+    },
+
     async positions(debateId: number, account: string): Promise<AccountPosition[]> {
       // The indexer keys positions by participant (`{debateId}_{account}`, address lowercased),
       // exactly the account's share holdings across this debate's arguments.
@@ -454,6 +519,8 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
   return {
     load: guarded((source) => source.load.bind(source)),
     list: guarded((source) => source.list.bind(source)),
+    userState: guarded((source) => source.userState.bind(source)),
+    argumentPosition: guarded((source) => source.argumentPosition.bind(source)),
     positions: guarded((source) => source.positions.bind(source)),
   };
 }

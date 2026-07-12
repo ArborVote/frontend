@@ -63,25 +63,27 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
-    // The keeper never joins: the pokes (finalize/advance/tally) are permissionless.
+    // The keeper never joins: the pokes (advance/tally) are permissionless.
     const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+    // Reads come from the source layer (here the chain source; the app prefers the indexer).
+    const reads = contractSource(address, RPC_URL);
 
     // The author starts the debate through the action layer and gets its ID back.
     const timeUnit = 60;
     expect(await author.createDebate('Test thesis', timeUnit)).toBe(0);
 
     // Join.
-    expect((await author.userState(0)).joined).toBe(false);
+    expect((await reads.userState(0, author.account)).joined).toBe(false);
     await author.join(0);
-    expect(await author.userState(0)).toEqual({ joined: true, tokens: 100 });
+    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 100 });
 
     // Author an argument at 80% initial approval with the minimum 10-token deposit
     // (market reserves 2 pro / 8 con).
     await author.addArgument(0, 0, 'pro', 80, 10, 'A machine-authored argument');
-    expect((await author.userState(0)).tokens).toBe(90);
+    expect((await reads.userState(0, author.account)).tokens).toBe(90);
 
     // Too early to advance: advancePhase silently no-ops on-chain, so the action verifies the effect.
-    expect((await keeper.userState(0)).joined).toBe(false);
+    expect((await reads.userState(0, keeper.account)).joined).toBe(false);
     await expect(keeper.advancePhase(0)).rejects.toThrow('The debate did not advance');
 
     // Time passes: the argument finalizes automatically once its window elapses, and the keeper
@@ -93,7 +95,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
     await rater.join(0);
     await rater.stake(0, 1, 'con', 20);
-    const raterPosition = await rater.position(0, 1);
+    const raterPosition = await reads.argumentPosition(0, 1, rater.account);
     expect(raterPosition.conShares).toBe(26);
     expect(raterPosition.proShares).toBe(0);
     expect(raterPosition.claimableFees).toBe(0); // not the creator
@@ -105,12 +107,12 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 staked.
     await rater.redeemShares(0, 1);
-    expect((await rater.userState(0)).tokens).toBe(104);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(104);
 
     // The author claims the accrued market fee.
-    expect((await author.position(0, 1)).claimableFees).toBe(1);
+    expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(1);
     await author.claimFees(0, 1);
-    expect((await author.userState(0)).tokens).toBe(91);
+    expect((await reads.userState(0, author.account)).tokens).toBe(91);
   }, 30_000);
 
   test.skipIf(!anvilAvailable)('edits and moves a draft argument through the action layer', async () => {
@@ -190,6 +192,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
     const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+    // Reads come from the source layer (here the indexer-less chain source).
+    const reads = contractSource(address, RPC_URL);
 
     const timeUnit = 60;
     await author.createDebate('Batch redeem thesis', timeUnit);
@@ -208,11 +212,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await rater.join(0);
     await rater.stake(0, 1, 'con', 20);
     await rater.stake(0, 2, 'con', 20);
-    expect((await rater.userState(0)).tokens).toBe(60);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(60);
 
-    // The indexer-less source reads the account's positions straight from the chain.
-    const source = contractSource(address, RPC_URL);
-    const held = await source.positions(0, anvilAccount(8).address);
+    // The source reads the account's positions straight from the chain.
+    const held = await reads.positions(0, anvilAccount(8).address);
     expect(held.map((position) => position.argumentId).sort()).toEqual([1, 2]);
     expect(held.every((position) => position.conShares > 0)).toBe(true);
 
@@ -226,7 +229,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     );
 
     // 20 tokens back per argument: 60 + 20 + 20 = 100.
-    expect((await rater.userState(0)).tokens).toBe(100);
-    expect(await source.positions(0, anvilAccount(8).address)).toEqual([]);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(100);
+    expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
   }, 30_000);
 });
