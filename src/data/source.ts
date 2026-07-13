@@ -2,7 +2,7 @@ import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Add
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import type { AccountPosition, ArgumentNode, Debate, DebateSummary, Phase } from '../types';
-import { thesisOf } from '../types';
+import { shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate } from './climateDebate';
 import { contractConfig } from './config';
@@ -56,20 +56,30 @@ interface OnChainArgument {
   votes: number;
 }
 
-/**
- * Falls back for content that is not on IPFS: short ASCII payloads are decoded,
- * anything else is shown as the raw URI.
- */
-function decodeInlineContent(contentURI: Hex): string {
-  const text = hexToString(contentURI).replaceAll('\0', '');
-  const printable = /^[\x20-\x7E]+$/.test(text);
-  return printable && text.length > 0 ? text : `Argument content ${contentURI}`;
+/** Resolved argument content: the text, plus the on-chain digest when it could not be resolved. */
+export interface ResolvedContent {
+  text: string;
+  /** Set only when the content could not be resolved - the shortened digest is shown, copyable. */
+  digest?: Hex;
 }
 
-async function contentToText(contentURI: Hex, gateway: string | undefined): Promise<string> {
+/**
+ * Falls back for content that is not on IPFS: short ASCII payloads are decoded inline (and count as
+ * resolved), anything else surfaces the digest itself - shortened for display, the full value kept
+ * so the UI can offer it for copying.
+ */
+export function decodeInlineContent(contentURI: Hex): ResolvedContent {
+  const text = hexToString(contentURI).replaceAll('\0', '');
+  const printable = /^[\x20-\x7E]+$/.test(text);
+  return printable && text.length > 0
+    ? { text }
+    : { text: shortDigest(contentURI), digest: contentURI };
+}
+
+async function resolveContent(contentURI: Hex, gateway: string | undefined): Promise<ResolvedContent> {
   if (gateway) {
     const ipfsText = await fetchTextByDigest(gateway, hexToBytes(contentURI));
-    if (ipfsText !== null) return ipfsText;
+    if (ipfsText !== null) return { text: ipfsText };
   }
   return decodeInlineContent(contentURI);
 }
@@ -138,6 +148,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
             .sort(([a], [b]) => a - b)
             .map(async ([argumentId, argument]) => {
               const marketSize = argument.pro + argument.con;
+              const content = await resolveContent(argument.contentURI, ipfsGateway);
               return {
                 id: argumentId,
                 parentId: argumentId === 0 ? null : argument.parentArgumentId,
@@ -147,7 +158,8 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                     : argument.isSupporting
                       ? ('pro' as const)
                       : ('con' as const),
-                text: await contentToText(argument.contentURI, ipfsGateway),
+                text: content.text,
+                contentDigest: content.digest,
                 // Approval is the pro-share price of the argument's constant-product market:
                 // the scarcer the pro reserve, the higher the approval.
                 approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
@@ -211,9 +223,11 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
               args: [id],
             }) as Promise<[number, number]>,
           ]);
+          const content = await resolveContent(thesis.contentURI, ipfsGateway);
           return {
             id: debateId,
-            thesis: await contentToText(thesis.contentURI, ipfsGateway),
+            thesis: content.text,
+            contentDigest: content.digest,
             phase: PHASE_BY_STATUS[currentPhase] ?? 'editing',
             stake: totalVotes,
             argumentsCount,
@@ -480,7 +494,8 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       const nodes: ArgumentNode[] = await Promise.all(
         data.Argument.map(async (row) => {
           const { contentURI, ...node } = nodeFromIndex(row, chainTime);
-          return { ...node, text: await contentToText(contentURI, ipfsGateway) };
+          const content = await resolveContent(contentURI, ipfsGateway);
+          return { ...node, text: content.text, contentDigest: content.digest };
         }),
       );
 
@@ -503,7 +518,8 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       const summaries = await Promise.all(
         data.Debate.map(async (row) => {
           const { contentURI, ...summary } = summaryFromIndex(row);
-          return { ...summary, thesis: await contentToText(contentURI, ipfsGateway) };
+          const content = await resolveContent(contentURI, ipfsGateway);
+          return { ...summary, thesis: content.text, contentDigest: content.digest };
         }),
       );
       // Debate entity IDs are strings, so Hasura cannot order them numerically.

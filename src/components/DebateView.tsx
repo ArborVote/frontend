@@ -5,6 +5,7 @@ import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
+import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
@@ -144,7 +145,9 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         <p className="focus-kicker">
           {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
         </p>
-        <h1 className="focus-text">{focus.text}</h1>
+        <h1 className="focus-text">
+          <ContentText text={focus.text} digest={focus.contentDigest} />
+        </h1>
         {isThesis && debate.phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
             {debate.approved ? 'Thesis confirmed ✓' : 'Thesis objected ✗'}

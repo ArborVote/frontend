@@ -5,13 +5,19 @@ export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
 /** A created argument is still editable and has no tradeable market yet; a final one is locked in. */
 export type ArgumentState = 'created' | 'final';
 
+/** Shortens a content digest to `0x2a3a…0683` - the first and last 4 hex digits. */
+export const shortDigest = (digest: string) => `${digest.slice(0, 6)}…${digest.slice(-4)}`;
+
 /** A node of the debate tree. The thesis is the node with `parentId: null`. */
 export interface ArgumentNode {
   id: number;
   parentId: number | null;
   /** Whether this argument supports or attacks its parent. `null` for the thesis. */
   side: Side | null;
+  /** The resolved content text, or - when the content could not be resolved - the shortened digest. */
   text: string;
+  /** The on-chain content digest (`0x…`), set only when the content could not be resolved from IPFS. */
+  contentDigest?: string;
   /** The argument market's current pro share, 0..1. */
   approval: number;
   /** Vote tokens staked on this argument's market. */
@@ -65,7 +71,10 @@ export interface Debate {
 /** A debate as it appears in the browse list. */
 export interface DebateSummary {
   id: number;
+  /** The resolved thesis text, or - when unresolved - the shortened content digest. */
   thesis: string;
+  /** The on-chain content digest (`0x…`), set only when the thesis content could not be resolved. */
+  contentDigest?: string;
   phase: Phase;
   /** Vote tokens committed to the debate's markets (deposits plus net stakes). */
   stake: number;

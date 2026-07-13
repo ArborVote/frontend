@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import type { Hex } from 'viem';
 import { rpcUp } from '../../scripts/devstack/anvil';
 import type { AccountPosition, Debate, DebateSummary } from '../types';
 import {
   contractSource,
+  decodeInlineContent,
   indexerSource,
   nodeFromIndex,
   summaryFromIndex,
@@ -10,6 +12,18 @@ import {
   withFallback,
   type DebateSource,
 } from './source';
+
+describe('decodeInlineContent', () => {
+  test('decodes short ASCII content stored on-chain inline (resolved, no digest)', () => {
+    // "Hello" as a right-zero-padded bytes32.
+    expect(decodeInlineContent((`0x48656c6c6f${'00'.repeat(27)}`) as Hex)).toEqual({ text: 'Hello' });
+  });
+
+  test('surfaces an unresolvable digest shortened, keeping the full value to copy', () => {
+    const digest = '0x2a3a8cf5cb8e05cd7b6f9ac881adafe1fb14030dba846233f211d4ce051d0683';
+    expect(decodeInlineContent(digest as Hex)).toEqual({ text: '0x2a3a…0683', digest });
+  });
+});
 
 describe('waitForIndexerBlock', () => {
   const realFetch = globalThis.fetch;
@@ -23,7 +37,7 @@ describe('waitForIndexerBlock', () => {
         JSON.stringify({
           data: { chain_metadata: processed === null ? [] : [{ latest_processed_block: processed }] },
         }),
-      )) as typeof fetch;
+      )) as unknown as typeof fetch;
   };
 
   test('resolves true once the indexer has processed the block', async () => {
@@ -35,7 +49,7 @@ describe('waitForIndexerBlock', () => {
   test('bails (false) when the indexer is unreachable, rather than blocking', async () => {
     globalThis.fetch = (async () => {
       throw new Error('indexer down');
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     expect(await waitForIndexerBlock('http://indexer', 100n, { timeoutMs: 5000, pollMs: 10 })).toBe(false);
   });
 
