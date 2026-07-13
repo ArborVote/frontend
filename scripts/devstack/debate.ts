@@ -48,7 +48,13 @@ export interface AdvancePhaseStep {
   user: string;
 }
 
-export type Step = AddStep | WaitStep | StakeStep | AdvancePhaseStep;
+/** Tallies the argument tree, computing the outcome and finishing the debate (requires the Tallying phase). */
+export interface TallyStep {
+  kind: 'tally';
+  user: string;
+}
+
+export type Step = AddStep | WaitStep | StakeStep | AdvancePhaseStep | TallyStep;
 
 export interface DebateScript {
   /** The debate's time unit in seconds. */
@@ -209,6 +215,11 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
       case 'advancePhase': {
         await act(step.user, 'advancePhase', [debateId]);
         log(`${step.user} advances the phase`);
+        break;
+      }
+      case 'tally': {
+        await act(step.user, 'tallyTree', [debateId]);
+        log(`${step.user} tallies the debate`);
         break;
       }
     }

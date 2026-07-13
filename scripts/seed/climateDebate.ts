@@ -5,7 +5,8 @@
  *
  * Budgets: every persona holds 100 vote tokens and each argument here stakes the
  * minimum 10-token deposit - alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
- * erika and frank join as pure raters, and the authors spend leftover budget.
+ * erika and frank join as pure raters, and the authors spend leftover budget. Finally the debate is
+ * advanced into Tallying and tallied, so the seeded sample ends Finished with a visible outcome.
  */
 
 import type { DebateScript } from '../devstack/debate';
@@ -69,5 +70,11 @@ export const climateDebate: DebateScript = {
     { kind: 'stake', user: 'carol', argument: 'subsidies-drove-it', side: 'pro', amount: 2 },
     { kind: 'stake', user: 'dan', argument: 'job-losses', side: 'con', amount: 6 },
     { kind: 'stake', user: 'dan', argument: 'mixed-causes', side: 'con', amount: 7 },
+
+    // Rating ends ten time units after creation; advance into Tallying and tally the tree so the
+    // seeded sample finishes with a computed outcome (the thesis confirmed or objected).
+    { kind: 'wait', timeUnits: 4 },
+    { kind: 'advancePhase', user: 'erika' },
+    { kind: 'tally', user: 'erika' },
   ],
 };
