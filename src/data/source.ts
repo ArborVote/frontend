@@ -1,4 +1,13 @@
-import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
+import {
+  createPublicClient,
+  getAddress,
+  http,
+  hexToBytes,
+  hexToString,
+  zeroAddress,
+  type Address,
+  type Hex,
+} from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import type { AccountPosition, ArgumentNode, Debate, DebateSummary } from '../types';
@@ -47,7 +56,6 @@ interface OnChainArgument {
   contentURI: Hex;
   creator: Address;
   isSupporting: boolean;
-  state: number;
   parentArgumentId: number;
   finalizationTime: bigint;
   pro: number;
@@ -163,7 +171,6 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 // the scarcer the pro reserve, the higher the approval.
                 approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
                 weight: argument.votes,
-                rawState: argument.state,
                 // Final-ness is by time: an argument locks in automatically once its editing window elapses.
                 state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
                 finalizationTime: Number(argument.finalizationTime),
@@ -172,8 +179,9 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
             }),
         )
       )
-        .filter((node) => node.rawState !== 0)
-        .map(({ rawState: _rawState, ...node }) => node);
+        // A nonexistent argument reads back with the zero-address creator; drop it. Defensive - the tree
+        // traversal only visits real nodes, but existence is no longer a stored flag to key off.
+        .filter((node) => node.creator !== zeroAddress);
 
       // Derive the live phase from the same clock the contract uses; only the terminal Finished latch is read raw.
       const finished = currentPhase === PHASE_FINISHED;

@@ -193,11 +193,6 @@
       "internalType": "bool"
      },
      {
-      "name": "state",
-      "type": "uint8",
-      "internalType": "enum Argument.State"
-     },
-     {
       "name": "parentArgumentId",
       "type": "uint16",
       "internalType": "uint16"
@@ -1214,22 +1209,6 @@
     "name": "value",
     "type": "uint256",
     "internalType": "uint256"
-   }
-  ]
- },
- {
-  "type": "error",
-  "name": "StateInvalid",
-  "inputs": [
-   {
-    "name": "expected",
-    "type": "uint8",
-    "internalType": "enum Argument.State"
-   },
-   {
-    "name": "actual",
-    "type": "uint8",
-    "internalType": "enum Argument.State"
    }
   ]
  },
