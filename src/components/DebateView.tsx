@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
+import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, thesisOf } from '../types';
@@ -179,8 +179,10 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         ) : (
           <p className="focus-meta">
             Market approval{' '}
-            <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
-            <strong className="mono">{focus.weight} ⬡</strong>
+            <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
+              {formatApproval(focus.approval)}
+            </strong>{' '}
+            · weight <strong className="mono">{focus.weight} ⬡</strong>
             {focusImpact !== undefined && (
               <span title={IMPACT_HINT}>
                 {' '}

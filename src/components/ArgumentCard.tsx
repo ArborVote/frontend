@@ -1,21 +1,23 @@
-import { formatImpact, IMPACT_HINT } from '../lib/impact';
+import { formatApproval, formatImpact, IMPACT_HINT } from '../lib/impact';
 import { formatDuration } from '../lib/time';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
 
 function ApprovalGauge({ approval, weight }: { approval: number; weight: number }) {
+  // A diverging bar anchored at the neutral midpoint (50%): the fill grows right of centre for a backed
+  // argument (green) and left of centre for a rejected one (red), matching the signed figure.
   const percent = Math.round(approval * 100);
+  const positive = percent >= 50;
   return (
     <span className="gauge">
-      <span
-        className="gauge-bar"
-        role="img"
-        aria-label={`Market approval ${percent} percent`}
-      >
-        <span className="gauge-pro" style={{ width: `${percent}%` }} />
+      <span className="gauge-bar" role="img" aria-label={`Market approval ${formatApproval(approval)}`}>
+        <span
+          className={`gauge-fill ${positive ? 'gauge-fill-pos' : 'gauge-fill-neg'}`}
+          style={{ left: `${Math.min(percent, 50)}%`, width: `${Math.abs(percent - 50)}%` }}
+        />
       </span>
       <span className="gauge-figures">
-        {percent}% · {weight} ⬡
+        {formatApproval(approval)} · {weight} ⬡
       </span>
     </span>
   );

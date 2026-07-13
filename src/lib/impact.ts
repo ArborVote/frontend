@@ -50,3 +50,11 @@ export function formatImpact(impact: number): string {
   const percent = Math.round(impact * 100);
   return percent > 0 ? `+${percent}%` : percent < 0 ? `−${Math.abs(percent)}%` : '±0%';
 }
+
+/**
+ * Formats a market approval (0..1, where 0.5 is neutral) as a signed percentage centered on neutral,
+ * mirroring the sway: 50% reads as ±0%, a fully backed argument as +100%, a fully rejected one as −100%.
+ */
+export function formatApproval(approval: number): string {
+  return formatImpact(2 * approval - 1);
+}

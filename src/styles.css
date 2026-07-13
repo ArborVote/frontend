@@ -564,19 +564,40 @@ button {
 }
 
 .gauge-bar {
+  position: relative;
   width: 5.5rem;
   height: 0.4rem;
   border-radius: 999px;
-  background: #e3cabe; /* redwood tint strong enough to read as the con share on white */
+  background: var(--hairline); /* neutral track; the fill diverges from the centre */
   overflow: hidden;
   flex: none;
 }
 
-.gauge-pro {
-  display: block;
+.gauge-fill {
+  position: absolute;
+  top: 0;
   height: 100%;
+}
+
+.gauge-fill-pos {
   background: var(--pro);
-  border-radius: 999px;
+}
+
+.gauge-fill-neg {
+  background: var(--con);
+}
+
+.gauge-bar::after {
+  /* the neutral midpoint tick, painted over the fill */
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--bark);
+  opacity: 0.4;
 }
 
 .gauge-figures {
