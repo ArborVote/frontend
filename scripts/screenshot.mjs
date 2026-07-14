@@ -16,6 +16,12 @@ await desktop.goto(url);
 await desktop.waitForLoadState('networkidle');
 await desktop.screenshot({ path: 'screenshots/desktop-browse.png' });
 
+// Desktop: a debate in the editing phase (one argument still a draft)
+await desktop.locator('.debate-open', { hasText: 'School days' }).click();
+await desktop.waitForTimeout(300);
+await desktop.screenshot({ path: 'screenshots/desktop-editing.png' });
+await desktop.goto(url);
+
 // Desktop: a finished debate per verdict (confirmed thesis, objected thesis)
 await desktop.locator('.debate-open', { hasText: 'transit data' }).click();
 await desktop.waitForTimeout(300);
@@ -54,6 +60,6 @@ await mobile.screenshot({ path: 'screenshots/mobile-thesis.png', fullPage: true 
 await browser.close();
 server.httpServer.close();
 console.log(
-  'Wrote screenshots/desktop-browse.png, desktop-finished-{confirmed,objected}.png, desktop-thesis.png, ' +
-    'desktop-drilldown.png, desktop-drilldown-deep.png (if deep enough), mobile-thesis.png',
+  'Wrote screenshots/desktop-browse.png, desktop-editing.png, desktop-finished-{confirmed,objected}.png, ' +
+    'desktop-thesis.png, desktop-drilldown.png, desktop-drilldown-deep.png (if deep enough), mobile-thesis.png',
 );

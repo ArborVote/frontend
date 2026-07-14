@@ -13,7 +13,7 @@ import { fetchTextByDigest } from '../lib/ipfs';
 import type { AccountPosition, ArgumentNode, Debate, DebateSummary } from '../types';
 import { phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
-import { climateDebate, confirmedDebate, objectedDebate } from './climateDebate';
+import { climateDebate, confirmedDebate, editingDebate, objectedDebate } from './climateDebate';
 import { contractConfig } from './config';
 
 /** The `User.Role` enum value for a joined participant (Unassigned = 0, Participant = 1). */
@@ -30,7 +30,7 @@ export interface DebateSource {
   positions(debateId: number, account: string): Promise<AccountPosition[]>;
 }
 
-const sampleDebates = [climateDebate, confirmedDebate, objectedDebate];
+const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDebate];
 
 export const mockSource: DebateSource = {
   load: async (debateId) => sampleDebates.find((debate) => debate.id === debateId) ?? climateDebate,

@@ -245,6 +245,44 @@ export const confirmedDebate: Debate = finishedDebate(
   [58, 34, 12],
 );
 
+/** A sample debate still in its editing phase; the newest argument is an unlocked draft. */
+export const editingDebate: Debate = {
+  id: 3,
+  phase: 'editing',
+  nodes: [
+    {
+      id: 0,
+      parentId: null,
+      side: null,
+      text: 'School days should start later.',
+      approval: 0.5,
+      weight: 30,
+      state: 'final',
+      finalizationTime: 0,
+    },
+    {
+      id: 1,
+      parentId: 0,
+      side: 'pro',
+      text: 'Teenagers demonstrably learn better after nine.',
+      approval: 0.64,
+      weight: 20,
+      state: 'final',
+      finalizationTime: 0,
+    },
+    {
+      id: 2,
+      parentId: 0,
+      side: 'con',
+      text: 'Buses, parents, and sports all key off the early bell.',
+      approval: 0.5,
+      weight: 10,
+      state: 'created',
+      finalizationTime: 0,
+    },
+  ],
+};
+
 /** A finished sample debate whose thesis was objected. */
 export const objectedDebate: Debate = finishedDebate(
   2,
