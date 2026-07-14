@@ -88,6 +88,33 @@ just ipfs-down   # stop it
 
 **Production pinning strategy.** Argument texts are tiny immutable blocks whose digests are public on-chain, so availability has three legs: (1) at authoring time the client publishes to the deployment's `VITE_IPFS_API` — a kubo node or cluster the operator runs behind an origin-restricted, authenticated proxy; (2) any party can audit and re-pin content from the on-chain digests — the event indexer (`../indexer`, `ENVIO_PIN_IPFS_API`) re-pins everything it sees, acting as the availability backstop; (3) the inline-decode fallback keeps short payloads readable with no IPFS at all. Because reads are digest-verified, *any* gateway — public or private — is safe to resolve through; a gateway can at worst withhold content, never forge it.
 
+## Hosting on Vercel
+
+The app deploys as a static Vite build plus one serverless route. Vercel detects Vite from the
+repo (installs and builds with bun via `bun.lock`); the hash-based routing needs no rewrites.
+
+Authoring on the hosted site publishes through [api/v0/add.ts](api/v0/add.ts), a kubo-shaped
+**pin proxy**: `publishText` sends the same multipart request it would send to a kubo node, the
+edge function pins the text on [Pinata](https://pinata.cloud) (free tier) and answers with kubo's
+`{Hash}`, and the client's digest assertion keeps holding — a mispinned CID fails loudly. The
+Pinata credential never reaches the browser. The route is origin-open like any public API;
+the 256 KiB cap bounds abuse, and the client-side digest check bounds damage.
+
+Project environment variables (Settings → Environment Variables):
+
+```sh
+VITE_ARBORVOTE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
+VITE_RPC_URL=https://sepolia.base.org
+VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
+VITE_IPFS_GATEWAY=https://ipfs.io
+VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
+PINATA_JWT=…                 # server-side only (Sensitive): a v3 key scoped to Files: Write
+```
+
+`VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
+`PINATA_JWT` is read only by the edge function at request time. Local development ignores all of
+this: `just dev-testnet` authors against the dockerized kubo, no pinning service involved.
+
 ## Wallets
 
 Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):

@@ -15,5 +15,5 @@
     "noEmit": true,
     "types": ["vite/client", "bun"]
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts", "api"]
 }
