@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
@@ -232,7 +232,17 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         </p>
       )}
 
-      <div className="columns" key={focus.id}>
+      <div
+        className="columns"
+        key={focus.id}
+        // Both columns span the same subgrid rows, so the i-th pro and con cards share a row
+        // (and a height), and the composers meet on the last one.
+        style={
+          {
+            '--column-rows': 1 + Math.max(pros.length || 1, cons.length || 1) + (authoring && tx ? 1 : 0),
+          } as CSSProperties
+        }
+      >
         <section className="column column-pro" aria-label="Pro arguments">
           <h2 className="column-title">Pros</h2>
           {pros.length === 0 ? (
@@ -252,14 +262,16 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             ))
           )}
           {authoring && tx && (
-            <Composer
-              key={`pro-${focus.id}`}
-              side="pro"
-              tokens={tx.tokens}
-              onAdd={(side, approval, deposit, text) =>
-                tx.addArgument(focus.id, side, approval, deposit, text)
-              }
-            />
+            <div className="column-composer">
+              <Composer
+                key={`pro-${focus.id}`}
+                side="pro"
+                tokens={tx.tokens}
+                onAdd={(side, approval, deposit, text) =>
+                  tx.addArgument(focus.id, side, approval, deposit, text)
+                }
+              />
+            </div>
           )}
         </section>
 
@@ -282,14 +294,16 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             ))
           )}
           {authoring && tx && (
-            <Composer
-              key={`con-${focus.id}`}
-              side="con"
-              tokens={tx.tokens}
-              onAdd={(side, approval, deposit, text) =>
-                tx.addArgument(focus.id, side, approval, deposit, text)
-              }
-            />
+            <div className="column-composer">
+              <Composer
+                key={`con-${focus.id}`}
+                side="con"
+                tokens={tx.tokens}
+                onAdd={(side, approval, deposit, text) =>
+                  tx.addArgument(focus.id, side, approval, deposit, text)
+                }
+              />
+            </div>
           )}
         </section>
       </div>

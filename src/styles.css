@@ -414,11 +414,21 @@ button {
   }
 }
 
+/* Each column shares the parent grid's rows (subgrid), so the i-th pro and con cards sit in
+   the same row and get the same height; on the stacked mobile layout the spans simply follow
+   each other and every row sizes to its single card. */
 .column {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span var(--column-rows, 1);
   gap: 0.75rem;
   min-width: 0;
+}
+
+/* The composers meet on the last shared row, whatever the two card counts are. */
+.column-composer {
+  display: grid;
+  grid-row: var(--column-rows, auto);
 }
 
 .column-title {
@@ -505,6 +515,8 @@ button {
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
+  /* Pin to the card's bottom edge: row-paired cards share a height, so the metas share a line. */
+  margin-top: auto;
 }
 
 .card-replies {

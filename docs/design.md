@@ -56,6 +56,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — pro/con cards are row-paired.** The two columns are subgrids of one shared grid:
+  the i-th pro and con cards sit in the same row and get the same height, the meta row is pinned
+  to the card's bottom edge, and the composers meet on the last row — so gauges, locks, and reply
+  counts line up across the columns at any text length (font sizes untouched). On the stacked
+  mobile layout the spans flow sequentially and every row sizes to its single card. (North star:
+  the overview stays legible at a glance.)
 - **2026-07-15 — a card without children reads "Undebated".** "No replies yet" was forum language;
   the tree speaks of arguments beneath a claim. One quiet, domain-true word that doubles as an
   invitation to argue; cards with children keep "n pro · n con →". (Principle 10, north star.)
