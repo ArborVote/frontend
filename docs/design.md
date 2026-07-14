@@ -1,0 +1,101 @@
+# Design language & decisions
+
+A living record of the UI's design principles and the notable decisions behind them — the design
+counterpart to the contracts repo's ADRs. Principles state what every new piece of UI should follow;
+the decision log records when and why a call was made, so it is not accidentally "fixed" later.
+Domain vocabulary itself lives in the contracts repo's `CONTEXT.md`; hard-to-reverse choices graduate
+to ADRs.
+
+## North star
+
+**The arguments are the interface.** The design is reduced on purpose: quiet neutrals, one serif
+voice for claims, thin hairlines, and as little chrome as possible, so that attention lands on the
+debate content and the overview stays legible at a glance. Stance color appears as *contour, not
+fill* — the green/red edge on an argument box says which side it argues without shouting over its
+text. Every addition must pay for the attention it takes from the arguments; when in doubt, remove.
+(Affirmed by Michael, 2026-07-14: the reduction, the focus on content, and the stance-colored
+contouring are exactly right — treat them as the baseline to protect.)
+
+## Principles
+
+1. **Monochrome stroke iconography.** Icons are inline SVGs drawn with `currentColor` strokes (the
+   card padlock, the schedule cogwheel), sized in `em` so they scale with their text. No emoji and no
+   symbol-font glyphs — font fallback renders them inconsistently and off-center.
+2. **Stance colors are reserved.** Green (`--pro`) and rust (`--con`) mean pro/con stance,
+   nothing else; all other UI stays in the ink/bark neutrals. Color must always carry meaning.
+3. **Live figures never jitter.** Numbers that tick (countdowns, balances) use the mono font with
+   tabular figures and fixed-width formats (`formatCountdown` is always seven characters), so a
+   running timer cannot change an element's width.
+4. **Dashed means "compose".** A dashed border marks the affordance for adding something (reply
+   composers, "+ Start a debate"). The landing page's primary action is the assertive variant — ink
+   dashes on card white that solidify on hover — and an enabled control must never look disabled.
+5. **Settings live on the value they edit.** A configuration affordance is the summary of the
+   current values itself (the schedule chip with the trailing cog), not a detached button; clicking
+   it opens the editor. Corner-gear and "Advanced options" disclosures were considered and rejected:
+   the first needs a card header we don't have, the second hides information worth glancing at.
+6. **Config modals edit live.** Changes apply the moment they are made — the summary behind the
+   modal visibly updates — so there is no Accept/Done/Reset footer; the cross and the backdrop are
+   the only exits. Validity gates the downstream action (the create button, with an explanatory
+   tooltip) instead of trapping the modal open. Transactional modals (draft + Accept/Cancel) are
+   reserved for destructive or hard-to-undo edits, which pre-creation settings are not.
+7. **Presets first, freedom behind them.** Common configurations are named preset chips, and the
+   default preset is literally named "Default" — one concept, no separate reset affordance. Free
+   fields sit in the same editor for full control; where the contract allows a value we advise
+   against, the UI warns softly rather than forbidding.
+8. **Neutral looks neutral.** Ratings and sways are signed percentages around ±0 with diverging,
+   center-anchored gauges — a 50% market reads as ±0%, not as "half full".
+9. **Hard rules block, guidance warns, hints stay short.** Constraints the contract enforces are
+   mirrored as errors that disable the action (locking > 0, editing > locking, rating ≥ locking);
+   sensible-configuration nudges are soft warnings with a one-line why (editing ≥ 5 locking windows
+   so arguments can be nested and moved into place; rating ≥ a quarter of editing so there is time
+   to read). Hover and helper copy is one sentence —
+   never state unenforced numbers as if they were rules.
+10. **Mechanism-honest copy.** Labels say what the mechanism does ("Underrated ↑ / Overrated ↓",
+   "locking · editing · rating", "You profit if the rating corrects your way"); tooltips explain the
+   consequence. No moralized or gamified wording that misstates the incentives.
+
+## Decision log
+
+- **2026-07-14 — the 30-minute locking rule was dropped.** First flat, then scaled to
+  max(30 min, editing/48) when Long's 1 h locking tripped it — and then removed: every variant
+  either warned on a stock preset or restated proportionality the nesting rule (editing ≥ 5
+  locking windows) already expresses. One rule per concern.
+- **2026-07-14 — Long locks in an hour; the locking guidance scales.** Long's locking rose to 1 h,
+  which would have tripped the flat 30-minute warning on a stock preset — the ceiling became
+  proportionate, max(30 min, editing/48), preserving the 30-minute rule for day-scale debates.
+- **2026-07-14 — `timeUnit` became `lockingDuration`, with a constraint ladder.** The contract
+  renamed the parameter (nothing is a multiple of it anymore), made the editing bound strict
+  (editing must exceed locking), and the frontend mirrors those as blocking errors while adding the
+  soft guidance ratios of principle 9. The rating ≥ editing/4 nudge is a heuristic — what really
+  bounds a sensible rating duration is an open question (tracked in the project TODO). Hints were
+  cut to one sentence; the old locking hint was verbose and presented the unenforced 30-minute
+  figure as if it were a rule.
+- **2026-07-14 — presets are one duration axis: Short · Default · Long.** "Demo" was removed (a
+  developer concern, not a user setting — devs type custom timings), and "Sprint" broke the axis by
+  naming a pace next to "Long" naming a duration. The trio now reads as a scale in the same
+  vocabulary as the values it sets. (Principles 7 and the north star.)
+- **2026-07-14 — durations drop zero units.** "locking 30m 0s · editing 1d 0h" became
+  "locking 30m · editing 1d" (`formatDuration` omits a zero second unit) — affirmed as exactly the
+  right kind of decluttering; also quiets the phase clock. (North star: remove noise.)
+- **2026-07-14 — schedule modal is live-editing; footer removed.** "Done" was redundant with the
+  cross/backdrop and "Accept" would misrepresent already-applied edits; "Reset to default"
+  duplicated the Default preset chip. (Principles 6, 7.)
+- **2026-07-14 — cogwheel became a stroke SVG.** The ⚙︎ text glyph fell back to a symbol font and
+  sat off-center next to 0.8 rem text at any size. (Principle 1.)
+- **2026-07-14 — the schedule summary chip is the settings button.** A separate "Customize" button
+  next to the summary read as displaced; the chip puts the affordance on the value. (Principle 5.)
+- **2026-07-14 — landing CTA got the assertive dashed variant.** "+ Start a debate" in bark grey
+  read as disabled and vanished on the page; ink dashes that solidify on hover keep the compose
+  language while making the primary action primary. (Principle 4.)
+- **2026-07-14 — presets renamed Day→Default, Week→Long.** Preset names should describe their role
+  relative to the default, not restate their durations (the chip already shows those).
+- **2026-07-14 — schedule durations read "locking · editing · rating".** Parallel gerunds; "drafts
+  lock in" broke the series. Matches the glossary term *Locking window* (contracts `CONTEXT.md`).
+- **2026-07-14 — draft lock-in shown as padlock + fixed-width countdown.** Replaced the dashed
+  "DRAFT · LOCKS IN" text chip: shackle-ajar padlock with a seven-character countdown while a draft
+  can change, a muted closed padlock once final. (Principles 1, 3.)
+- **2026-07-13 — approval displayed as a signed rating centered on neutral.** 0..100% market
+  approval reads as −100%..+100% around ±0, matching the sway figures; the gauge diverges from the
+  center. Display-only — the contract keeps its 0..1 price. (Principle 8.)
+- **2026-07-11 — rating controls relabeled "Stake n ⬡ · Underrated ↑ / Overrated ↓".**
+  "Invest pro/con" implied agreement; staking on a correction is stance-free. (Principle 9.)
