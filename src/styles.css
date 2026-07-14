@@ -803,6 +803,13 @@ button {
   color: var(--con);
 }
 
+/* The character budget sits at the far end of the action row. */
+.char-budget {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--bark);
+}
+
 .redeem-all {
   display: flex;
   align-items: center;

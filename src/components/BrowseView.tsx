@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
+import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import { formatDuration } from '../lib/time';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
+import { CharBudget } from './CharBudget';
 import { ScheduleSettings } from './ScheduleSettings';
 
 const PHASE_SHORT: Record<Phase, string> = {
@@ -101,7 +103,7 @@ function CreatePanel({
         onChange={(event) => setThesis(event.target.value)}
         placeholder="The thesis to debate…"
         rows={3}
-        maxLength={2000}
+        maxLength={MAX_CONTENT_CHARS}
         required
       />
       <button
@@ -133,6 +135,7 @@ function CreatePanel({
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
+        <CharBudget length={thesis.length} />
       </div>
       {error && <p className="action-error">{error}</p>}
     </form>

@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
+import { MAX_CONTENT_CHARS } from '../lib/ipfs';
+import { CharBudget } from './CharBudget';
 
 /** A finalized argument a draft can be moved beneath. */
 export interface MoveTarget {
@@ -88,7 +90,7 @@ export function DraftControls({
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           rows={3}
-          maxLength={2000}
+          maxLength={MAX_CONTENT_CHARS}
           required
         />
         <div className="action-row">
@@ -98,6 +100,7 @@ export function DraftControls({
           <button type="button" className="btn" onClick={() => setMode('idle')} disabled={busy}>
             Cancel
           </button>
+          <CharBudget length={draft.length} />
         </div>
         {error && <p className="action-error">{error}</p>}
       </form>

@@ -56,6 +56,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — authored texts are capped at 250 characters, budget always visible.** Theses and
+  arguments share one hard cap (`MAX_CONTENT_CHARS`): one sharp claim per box — depth belongs in
+  the tree, not in paragraphs, and short cards keep the overview scannable (north star). The input
+  simply stops at the limit, and the mono `n/250` counter at the end of the action row is always
+  shown, so the medium's size is clear from the first character. (Started as 140 with a counter
+  appearing only near the limit; 250 gives claims room to breathe and the permanent budget is more
+  predictable than one that pops in.) (Principles 3, 9.)
 - **2026-07-14 — the 30-minute locking rule was dropped.** First flat, then scaled to
   max(30 min, editing/48) when Long's 1 h locking tripped it — and then removed: every variant
   either warned on a stock preset or restated proportionality the nesting rule (editing ≥ 5

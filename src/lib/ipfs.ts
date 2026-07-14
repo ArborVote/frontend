@@ -23,6 +23,13 @@ import { cidFromSha256Digest } from './cid';
  */
 export const MAX_CONTENT_BYTES = 256 * 1024;
 
+/**
+ * The product bound on authored texts (theses and arguments): one sharp claim per box -
+ * depth belongs in the tree, not in paragraphs. Distinct from `MAX_CONTENT_BYTES`, the
+ * transport bound on what a single digest can reference.
+ */
+export const MAX_CONTENT_CHARS = 250;
+
 /** The sha-256 digest of the text - the raw bytes of the on-chain contentURI. */
 export async function sha256DigestOf(text: string): Promise<Uint8Array> {
   return sha256(new TextEncoder().encode(text));

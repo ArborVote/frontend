@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
+import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import type { Side } from '../types';
+import { CharBudget } from './CharBudget';
 
 /** The minimum argument deposit, mirroring the contract's `_MIN_DEBATE_DEPOSIT`. */
 const MIN_DEPOSIT = 10;
@@ -65,7 +67,7 @@ export function Composer({
         onChange={(event) => setText(event.target.value)}
         placeholder={`Your ${side} argument…`}
         rows={3}
-        maxLength={2000}
+        maxLength={MAX_CONTENT_CHARS}
         required
       />
       <label className="composer-approval">
@@ -103,6 +105,7 @@ export function Composer({
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
+        <CharBudget length={text.length} />
       </div>
       {error && <p className="action-error">{error}</p>}
     </form>
