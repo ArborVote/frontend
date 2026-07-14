@@ -89,11 +89,6 @@ button {
   color: var(--bark);
 }
 
-.phase-rating {
-  color: var(--pro);
-  border-color: var(--pro);
-}
-
 /* An account address: shortened, full on hover, copied on click. */
 .address {
   border: none;

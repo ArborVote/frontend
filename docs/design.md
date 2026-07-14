@@ -56,6 +56,9 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — the rating chip lost its green.** `.phase-rating` was the one phase styled in a
+  stance color, reading as "pro" next to the verdict marks; every phase chip is neutral now — the
+  word carries the state, green stays reserved for the pro stance. (Principle 2.)
 - **2026-07-15 — browse phase chips share one width, verdict slot always reserved.** The chips are
   a column (equal min-width, centered label), and the ✓/✗ slot exists on every row whether or not
   there is a verdict — a mark must never shift a chip out of line. (North star: the overview reads
