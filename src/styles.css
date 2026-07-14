@@ -589,10 +589,19 @@ button {
   color: var(--con);
 }
 
-/* The browse-list outcome mark: the focus verdict's checkmark/cross, reduced to one glyph. */
+/* The browse-list outcome mark: the focus verdict's checkmark/cross, reduced to one glyph.
+   The slot is fixed-width and always present, so the phase chips align across rows. */
 .verdict-mark {
   flex: none;
+  width: 1rem;
+  text-align: center;
   font-weight: 700;
+}
+
+/* One width for every phase chip in the list, so the column reads as a column. */
+.debate-row .phase {
+  min-width: 5.75rem;
+  text-align: center;
 }
 
 /* ── Approval gauge ──────────────────────────────────────────────────── */

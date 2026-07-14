@@ -56,6 +56,10 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — browse phase chips share one width, verdict slot always reserved.** The chips are
+  a column (equal min-width, centered label), and the ✓/✗ slot exists on every row whether or not
+  there is a verdict — a mark must never shift a chip out of line. (North star: the overview reads
+  at a glance; kin to the row-paired cards.)
 - **2026-07-15 — finished debates carry their verdict into the browse list.** A green ✓ / red ✗
   next to the Finished chip — the focus view's "Thesis confirmed ✓ / objected ✗" reduced to one
   glyph, same characters, same stance colors (tooltip spells it out). (Principles 2, 10.)

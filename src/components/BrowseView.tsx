@@ -229,14 +229,15 @@ export function BrowseView({
                 </span>
               </button>
               <span className={`phase phase-${debate.phase}`}>{PHASE_SHORT[debate.phase]}</span>
-              {debate.phase === 'finished' && debate.approved !== undefined && (
-                <span
-                  className={`verdict-mark ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}
-                  title={debate.approved ? 'Thesis confirmed' : 'Thesis objected'}
-                >
-                  {debate.approved ? '✓' : '✗'}
-                </span>
-              )}
+              {/* The verdict slot is always rendered so the phase chips align across rows. */}
+              <span
+                className={`verdict-mark ${debate.approved === undefined ? '' : debate.approved ? 'verdict-approved' : 'verdict-objected'}`}
+                title={
+                  debate.approved === undefined ? undefined : debate.approved ? 'Thesis confirmed' : 'Thesis objected'
+                }
+              >
+                {debate.approved === undefined ? '' : debate.approved ? '✓' : '✗'}
+              </span>
               {debate.creator && <AddressChip address={debate.creator} />}
             </div>
           ))}
