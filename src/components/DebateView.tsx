@@ -105,9 +105,10 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
 
-  // Live preview of the tally during the rating, the mirrored result afterwards.
-  const impacts = debate.phase === 'editing' ? null : impactsOf(debate);
-  const focusImpact = impacts?.get(focus.id);
+  // A live, client-side preview of the tally in every phase - during editing arguments sway as they
+  // lock in (drafts contribute nothing, like the tally treats them) - and the mirrored result once run.
+  const impacts = impactsOf(debate);
+  const focusImpact = impacts.get(focus.id);
   const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
   // Editing affordances close when the on-chain editing window passes, even before anyone pokes the
@@ -244,7 +245,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 key={node.id}
                 debate={debate}
                 node={node}
-                impact={impacts?.get(node.id)}
+                impact={impacts.get(node.id)}
                 now={now}
                 onFocus={setFocusedId}
               />
@@ -274,7 +275,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 key={node.id}
                 debate={debate}
                 node={node}
-                impact={impacts?.get(node.id)}
+                impact={impacts.get(node.id)}
                 now={now}
                 onFocus={setFocusedId}
               />

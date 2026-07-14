@@ -42,7 +42,7 @@ export function ArgumentCard({
 }: {
   debate: Debate;
   node: ArgumentNode;
-  /** The argument's tally impact on its parent; absent while the debate is still being edited. */
+  /** The argument's sway on its parent: a live preview of the tally, its mirrored result once run. */
   impact?: number;
   /** The ticking clock (unix seconds), driving the draft finalization countdown. */
   now: number;
