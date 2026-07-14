@@ -76,6 +76,8 @@ export interface DebateSummary {
   /** The on-chain content digest (`0x…`), set only when the thesis content could not be resolved. */
   contentDigest?: string;
   phase: Phase;
+  /** The finished debate's outcome (thesis confirmed or objected); undefined until the tally has run. */
+  approved?: boolean;
   /** Vote tokens committed to the debate's markets (deposits plus net stakes). */
   stake: number;
   argumentsCount: number;

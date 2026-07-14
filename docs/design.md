@@ -56,6 +56,9 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — finished debates carry their verdict into the browse list.** A green ✓ / red ✗
+  next to the Finished chip — the focus view's "Thesis confirmed ✓ / objected ✗" reduced to one
+  glyph, same characters, same stance colors (tooltip spells it out). (Principles 2, 10.)
 - **2026-07-15 — unresolved content links to its `ipfs://` URI.** The digest fallback used to copy
   the CID; it now opens `ipfs://<cid>` in a new tab so an IPFS-enabled browser or extension can try
   providers beyond the app's gateway. The full digest stays on the tooltip. (Principle 10.)

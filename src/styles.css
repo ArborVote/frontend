@@ -589,6 +589,12 @@ button {
   color: var(--con);
 }
 
+/* The browse-list outcome mark: the focus verdict's checkmark/cross, reduced to one glyph. */
+.verdict-mark {
+  flex: none;
+  font-weight: 700;
+}
+
 /* ── Approval gauge ──────────────────────────────────────────────────── */
 .gauge {
   display: flex;

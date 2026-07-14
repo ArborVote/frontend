@@ -236,11 +236,16 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
               }) as Promise<[number, number]>,
             ]);
           const content = await resolveContent(thesis.contentURI, ipfsGateway);
+          // The outcome exists only once the debate is finished (the read reverts before the tally).
+          const approved = currentPhase === PHASE_FINISHED
+            ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
+            : undefined;
           return {
             id: debateId,
             thesis: content.text,
             contentDigest: content.digest,
             phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
+            approved,
             stake: totalVotes,
             argumentsCount,
             creator: thesis.creator,
@@ -354,6 +359,7 @@ export interface IndexedDebateSummaryRow {
   creator: string;
   contentURI: string;
   finished: boolean;
+  approved: boolean | null;
   editingEndTime: string;
   ratingEndTime: string;
   totalVotes: string;
@@ -379,6 +385,8 @@ export function summaryFromIndex(
     id: Number(row.id),
     contentURI: row.contentURI as Hex,
     phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
+    // The outcome exists only once the tally has run (null in the index before that).
+    approved: row.approved ?? undefined,
     stake: Number(row.totalVotes),
     argumentsCount: Number(row.argumentsCount),
     // The index stores addresses lowercased; checksum to match the chain reads.
@@ -394,7 +402,7 @@ const INDEXER_QUERY = `query DebateTree($debateId: String!) {
 }`;
 
 const INDEXER_LIST_QUERY = `query DebateList {
-  Debate { id creator contentURI finished editingEndTime ratingEndTime totalVotes argumentsCount }
+  Debate { id creator contentURI finished approved editingEndTime ratingEndTime totalVotes argumentsCount }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {

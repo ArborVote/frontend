@@ -118,6 +118,7 @@ describe('summaryFromIndex', () => {
     creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
     contentURI: '0xabc2',
     finished: false,
+    approved: null,
     editingEndTime: '700',
     ratingEndTime: '1000',
     totalVotes: '291',
@@ -130,6 +131,7 @@ describe('summaryFromIndex', () => {
       id: 2,
       contentURI: '0xabc2',
       phase: 'rating',
+      approved: undefined,
       stake: 291,
       argumentsCount: 25,
       creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -138,6 +140,12 @@ describe('summaryFromIndex', () => {
 
   test('lets the finished latch win over the clock', () => {
     expect(summaryFromIndex({ ...row, finished: true }, 800).phase).toBe('finished');
+  });
+
+  test('carries the finished debate outcome through', () => {
+    expect(summaryFromIndex({ ...row, finished: true, approved: false }, 800).approved).toBe(false);
+    expect(summaryFromIndex({ ...row, finished: true, approved: true }, 800).approved).toBe(true);
+    expect(summaryFromIndex(row, 800).approved).toBeUndefined();
   });
 });
 

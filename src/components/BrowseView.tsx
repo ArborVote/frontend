@@ -229,6 +229,14 @@ export function BrowseView({
                 </span>
               </button>
               <span className={`phase phase-${debate.phase}`}>{PHASE_SHORT[debate.phase]}</span>
+              {debate.phase === 'finished' && debate.approved !== undefined && (
+                <span
+                  className={`verdict-mark ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}
+                  title={debate.approved ? 'Thesis confirmed' : 'Thesis objected'}
+                >
+                  {debate.approved ? '✓' : '✗'}
+                </span>
+              )}
               {debate.creator && <AddressChip address={debate.creator} />}
             </div>
           ))}
