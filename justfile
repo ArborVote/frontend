@@ -45,7 +45,9 @@ ipfs-up:
 ipfs-down:
     docker compose down
 
-# Build and capture design-review screenshots (desktop, drill-down, mobile)
+# Build and capture design-review screenshots (browse, thesis, drill-down, mobile).
+# The deployment vars are blanked so a stale .env.local (dev-anvil) or .env cannot pull the
+# build into contract mode against a dead chain - the tool always shoots the sample debate.
 screenshots:
-    bun run build
+    VITE_ARBORVOTE_ADDRESS= VITE_RPC_URL= VITE_INDEXER_URL= bun run build
     bun scripts/screenshot.mjs
