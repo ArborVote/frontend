@@ -89,7 +89,7 @@ try {
     return receipt.contractAddress;
   };
 
-  const mockPoh = await deploy(await loadArtifact(contractsDir, 'MockProofOfHumanity.m.sol', 'MockProofOfHumanity'), []);
+  const mockPoh = await deploy(await loadArtifact(contractsDir, 'MockIdentityRegistry.m.sol', 'MockIdentityRegistry'), []);
   const arborVoteArtifact = await loadArtifact(contractsDir, 'ArborVote.sol', 'ArborVote');
   const arborVote = await deploy(arborVoteArtifact, [mockPoh]);
   log(`ArborVote deployed at ${arborVote} (mock Proof of Humanity at ${mockPoh})`);

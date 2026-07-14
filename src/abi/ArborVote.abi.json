@@ -3,9 +3,9 @@
   "type": "constructor",
   "inputs": [
    {
-    "name": "poh",
+    "name": "identityRegistry",
     "type": "address",
-    "internalType": "contract IProofOfHumanity"
+    "internalType": "contract IIdentityRegistry"
    }
   ],
   "stateMutability": "nonpayable"
@@ -1232,5 +1232,10 @@
     "internalType": "uint48"
    }
   ]
+ },
+ {
+  "type": "error",
+  "name": "TimeUnitZero",
+  "inputs": []
  }
 ]

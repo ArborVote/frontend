@@ -51,7 +51,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       return receipt.contractAddress;
     };
 
-    const poh = await deploy('MockProofOfHumanity.m.sol', 'MockProofOfHumanity', []);
+    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
     const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
 
     const warp = async (seconds: number) => {
@@ -124,7 +124,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       if (!receipt.contractAddress) throw new Error('no contract address');
       return receipt.contractAddress;
     };
-    const poh = await deploy('MockProofOfHumanity.m.sol', 'MockProofOfHumanity', []);
+    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
     const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
 
     const config = { address, rpcUrl: RPC_URL };
@@ -174,7 +174,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       if (!receipt.contractAddress) throw new Error('no contract address');
       return receipt.contractAddress;
     };
-    const poh = await deploy('MockProofOfHumanity.m.sol', 'MockProofOfHumanity', []);
+    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
     const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
 
     const warp = async (seconds: number) => {
