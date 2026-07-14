@@ -56,6 +56,9 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — unresolved content links to its `ipfs://` URI.** The digest fallback used to copy
+  the CID; it now opens `ipfs://<cid>` in a new tab so an IPFS-enabled browser or extension can try
+  providers beyond the app's gateway. The full digest stays on the tooltip. (Principle 10.)
 - **2026-07-15 — the focused argument shows its lock state.** The focus meta ends with the same
   countdown padlock the cards carry — a focused draft was indistinguishable from a final argument.
   One shared `LockChip`; the thesis (born final, no draft lifecycle) shows none. (Principles 1, 3.)

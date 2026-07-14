@@ -856,6 +856,7 @@ button {
   border: none;
   padding: 0;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .content-missing:hover {
