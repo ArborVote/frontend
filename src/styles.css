@@ -513,15 +513,37 @@ button {
   white-space: nowrap;
 }
 
-.card-draft {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  border: 1px dashed var(--bark);
+.card-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   color: var(--bark);
+  font-variant-numeric: tabular-nums; /* fixed-width digits so the countdown never jitters */
+  white-space: nowrap;
+}
+
+/* Locked-in is the resting state of most arguments, so keep its bare padlock quiet. */
+.card-lock-locked {
+  opacity: 0.45;
+}
+
+.lock-icon {
+  width: 0.95em;
+  height: 0.95em;
+  flex: none;
+}
+
+.lock-body {
+  fill: currentColor;
+}
+
+.lock-shackle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
 }
 
 .card-impact {
