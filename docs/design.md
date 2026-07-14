@@ -56,6 +56,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — the focused argument shows its lock state.** The focus meta ends with the same
+  countdown padlock the cards carry — a focused draft was indistinguishable from a final argument.
+  One shared `LockChip`; the thesis (born final, no draft lifecycle) shows none. (Principles 1, 3.)
+- **2026-07-15 — a draft's reply slot stays empty.** "Undebated" is reserved for *final* childless
+  arguments: a draft cannot be replied to yet (nesting needs a locked-in parent), so claiming it
+  is undebated misled — its countdown padlock owns that story until it locks in. (Principle 10.)
 - **2026-07-15 — pro/con cards are row-paired.** The two columns are subgrids of one shared grid:
   the i-th pro and con cards sit in the same row and get the same height, the meta row is pinned
   to the card's bottom edge, and the composers meet on the last row — so gauges, locks, and reply

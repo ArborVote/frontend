@@ -68,7 +68,10 @@ export function ArgumentCard({
         )}
         <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">
-          {replies.length > 0 ? `${replies.join(' · ')} →` : 'Undebated'}
+          {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
+              empty - the countdown padlock owns that story. Final and childless reads as an
+              invitation. */}
+          {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
         </span>
       </span>
     </button>
