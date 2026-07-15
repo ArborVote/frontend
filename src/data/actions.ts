@@ -19,9 +19,11 @@ import {
   zeroAddress,
   type Abi,
   type Address,
+  type Chain,
   type EIP1193Provider,
   type Hex,
   type TransactionReceipt,
+  type WalletClient,
 } from 'viem';
 
 import abi from '../abi/ArborVote.abi.json';
@@ -101,6 +103,44 @@ export interface BountyFunding {
   amount: bigint;
 }
 
+/** Chains the app names in wallet prompts; anything else gets a generic label. */
+const CHAIN_NAMES: Record<number, string> = {
+  8453: 'Base',
+  84532: 'Base Sepolia',
+  31337: 'Anvil (local)',
+};
+
+/** True when the wallet rejected a switch because it does not know the chain (EIP-3085 code 4902). */
+function isUnknownChainError(cause: unknown): boolean {
+  if ((cause as { code?: number } | null)?.code === 4902) {
+    return true;
+  }
+  return (
+    cause instanceof BaseError &&
+    cause.walk((error) => (error as { code?: number }).code === 4902) !== null
+  );
+}
+
+/**
+ * Switches the wallet to the deployment's chain before transacting - wallets routinely sit on
+ * another network, which would otherwise fail every write with a chain mismatch. A chain the
+ * wallet does not know is added first (EIP-3085), then switched to.
+ */
+export async function ensureWalletChain(walletClient: WalletClient, chain: Chain): Promise<void> {
+  if ((await walletClient.getChainId()) === chain.id) {
+    return;
+  }
+  try {
+    await walletClient.switchChain({ id: chain.id });
+  } catch (cause) {
+    if (!isUnknownChainError(cause)) {
+      throw cause;
+    }
+    await walletClient.addChain({ chain });
+    await walletClient.switchChain({ id: chain.id });
+  }
+}
+
 export async function connectDebateActions(
   config: ContractConfig,
   provider: EIP1193Provider,
@@ -114,9 +154,10 @@ export async function connectDebateActions(
     pollingInterval: 500,
     cacheTime: 500,
   });
+  const chainId = await publicClient.getChainId();
   const chain = defineChain({
-    id: await publicClient.getChainId(),
-    name: 'debate chain',
+    id: chainId,
+    name: CHAIN_NAMES[chainId] ?? `chain ${chainId}`,
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: { default: { http: [config.rpcUrl] } },
   });
@@ -131,6 +172,7 @@ export async function connectDebateActions(
     args: unknown[],
     opts: { settle?: boolean } = {},
   ): Promise<TransactionReceipt> => {
+    await ensureWalletChain(walletClient, chain);
     const { request } = await publicClient.simulateContract({
       account,
       address: config.address,
@@ -160,6 +202,7 @@ export async function connectDebateActions(
 
   /** Approves the contract for a token amount when the current allowance does not cover it. */
   const approveIfNeeded = async (token: Address, amount: bigint): Promise<void> => {
+    await ensureWalletChain(walletClient, chain);
     const allowance = await publicClient.readContract({
       address: token,
       abi: erc20Abi,

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { createWalletClient, custom, defineChain } from 'viem';
 import type { Abi, Address, EIP1193Provider, Hex } from 'viem';
 
 import { rpcUp } from '../../scripts/devstack/anvil';
@@ -7,7 +8,7 @@ import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
 import abi from '../abi/ArborVote.abi.json';
 import { classicSchedule } from '../lib/debateTiming';
 import { contentURIOf } from '../lib/ipfs';
-import { connectDebateActions } from './actions';
+import { connectDebateActions, ensureWalletChain } from './actions';
 import { contractSource } from './source';
 
 const RPC_URL = 'http://127.0.0.1:8545';
@@ -226,4 +227,81 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect((await reads.userState(0, rater.account)).tokens).toBe(100);
     expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
   }, 30_000);
+});
+
+describe('ensureWalletChain (against a scripted wallet provider)', () => {
+  const chain = defineChain({
+    id: 84532,
+    name: 'Base Sepolia',
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: { default: { http: ['http://rpc.invalid'] } },
+  });
+
+  /** A wallet stand-in on `walletChainId` that optionally does not know the target chain yet. */
+  function scriptedWallet(walletChainId: number, opts: { knowsChain?: boolean } = {}) {
+    const calls: string[] = [];
+    let current = walletChainId;
+    let known = opts.knowsChain ?? true;
+    const provider = {
+      request: async ({ method, params }: { method: string; params?: unknown[] }) => {
+        calls.push(method);
+        switch (method) {
+          case 'eth_chainId':
+            return `0x${current.toString(16)}`;
+          case 'wallet_switchEthereumChain': {
+            const target = parseInt((params as [{ chainId: string }])[0].chainId, 16);
+            if (target !== walletChainId && !known) {
+              // Wallets answer a switch to a chain they do not know with EIP-3085's code 4902.
+              throw { code: 4902, message: 'Unrecognized chain ID' };
+            }
+            current = target;
+            return null;
+          }
+          case 'wallet_addEthereumChain':
+            known = true;
+            return null;
+          default:
+            throw new Error(`unexpected method ${method}`);
+        }
+      },
+    } as unknown as EIP1193Provider;
+    const client = createWalletClient({ chain, transport: custom(provider) });
+    return { client, calls };
+  }
+
+  test('does nothing when the wallet already sits on the chain', async () => {
+    const { client, calls } = scriptedWallet(84532);
+    await ensureWalletChain(client, chain);
+    expect(calls).toEqual(['eth_chainId']);
+  });
+
+  test('switches a wallet sitting on another chain', async () => {
+    const { client, calls } = scriptedWallet(1);
+    await ensureWalletChain(client, chain);
+    expect(calls).toEqual(['eth_chainId', 'wallet_switchEthereumChain']);
+  });
+
+  test('adds the chain first when the wallet does not know it', async () => {
+    const { client, calls } = scriptedWallet(1, { knowsChain: false });
+    await ensureWalletChain(client, chain);
+    expect(calls).toEqual([
+      'eth_chainId',
+      'wallet_switchEthereumChain',
+      'wallet_addEthereumChain',
+      'wallet_switchEthereumChain',
+    ]);
+  });
+
+  test('passes an unrelated switch failure through', async () => {
+    const failing = createWalletClient({
+      chain,
+      transport: custom({
+        request: async ({ method }: { method: string }) => {
+          if (method === 'eth_chainId') return '0x1';
+          throw { code: 4001, message: 'User rejected the request.' };
+        },
+      } as unknown as EIP1193Provider),
+    });
+    await expect(ensureWalletChain(failing, chain)).rejects.toThrow();
+  });
 });
