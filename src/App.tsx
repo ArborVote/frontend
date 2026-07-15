@@ -384,6 +384,15 @@ export default function App() {
           </p>
         )
       )}
+
+      <footer className="footer">
+        <a href="https://github.com/arborvote" target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+        <a href="https://arborvote.github.io/docs/" target="_blank" rel="noopener noreferrer">
+          Documentation
+        </a>
+      </footer>
     </>
   );
 }
