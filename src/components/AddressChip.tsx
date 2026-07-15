@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { AddressBadge } from './AddressBadge';
 
-/** Shortens an address to the `0x123…456` form shown in the chip. */
-export const shortAddress = (address: string) => `${address.slice(0, 5)}…${address.slice(-3)}`;
-
-/** An account address: shortened, shown in full on hover, copied to the clipboard on click. */
+/** An account address: identicon plus shortened form, full on hover, copied to the clipboard on click. */
 export function AddressChip({ address }: { address: string }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -27,7 +25,7 @@ export function AddressChip({ address }: { address: string }) {
       title={copied ? 'Copied!' : `${address} - click to copy`}
       onClick={copy}
     >
-      {copied ? 'copied ✓' : shortAddress(address)}
+      <AddressBadge address={address} label={copied ? 'copied ✓' : undefined} />
     </button>
   );
 }

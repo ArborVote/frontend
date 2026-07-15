@@ -56,6 +56,15 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — one address badge everywhere: identicon + `0x1234…abcd`.** Accounts render through
+  a single `AddressBadge` (blockies-style deterministic identicon plus the canonical truncation),
+  composed by the copy chip and the wallet button — two competing truncations collapsed into the
+  ecosystem-standard form (four hex either side, as Etherscan and the wallets themselves print it).
+  The identicon is the exception to monochrome iconography: its colors ARE the identity, which is
+  exactly principle 2's bar; it also replaces the wallet button's green dot (an address showing is
+  the connected signal). The icon is rounded (radius just under the boxes' own) and sized ~1.4em so
+  the 8×8 pattern is legible — a sharp small square sat foreign among the rounded cards.
+  (Principles 1, 2.)
 - **2026-07-15 — "Highest bounty" ranks in whole tokens, not value.** The sort normalizes each pool
   by its token's decimals and orders bounty-less debates last. Without a price oracle this is
   unit-honest, not value-honest — 50 USDC ranks above 0.5 WETH — which is stated here rather than

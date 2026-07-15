@@ -113,6 +113,23 @@ button {
   text-underline-offset: 0.2em;
 }
 
+/* The one account rendering: identicon + canonical truncation, composed by chips and buttons. */
+.address-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Rounded just under the boxes' own radii so it nests into the card language; sized so the
+   8x8 pattern stays legible. */
+.identicon {
+  width: 1.4em;
+  height: 1.4em;
+  flex: none;
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
 /* An account address: shortened, full on hover, copied on click. */
 .address {
   border: none;
@@ -161,17 +178,7 @@ button {
   background: var(--canvas);
 }
 
-.wallet-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--pro);
-}
 
-.wallet-address {
-  font-family: var(--font-mono);
-  font-weight: 400;
-}
 
 .wallet-menu {
   position: absolute;

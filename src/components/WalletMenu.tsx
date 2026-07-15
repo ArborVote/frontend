@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { shortAddress, type WalletState } from '../wallet/useWallet';
+import { type WalletState } from '../wallet/useWallet';
+import { AddressBadge } from './AddressBadge';
 
 export function WalletMenu({ wallet }: { wallet: WalletState }) {
   const [open, setOpen] = useState(false);
@@ -25,8 +26,7 @@ export function WalletMenu({ wallet }: { wallet: WalletState }) {
     return (
       <div className="wallet" ref={menuRef}>
         <button type="button" className="wallet-button" onClick={() => setOpen((o) => !o)}>
-          <span className="wallet-dot" aria-hidden />
-          <span className="wallet-address">{shortAddress(wallet.account)}</span>
+          <AddressBadge address={wallet.account} />
         </button>
         {open && (
           <div className="wallet-menu" role="menu">
