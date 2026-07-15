@@ -60,6 +60,8 @@ button {
   letter-spacing: -0.01em;
   color: inherit;
   text-decoration: none;
+  /* Air between the wordmark and the back link, on top of the topbar's own gap. */
+  margin-right: 0.75rem;
 }
 
 .back {
