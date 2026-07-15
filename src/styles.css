@@ -126,6 +126,9 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  /* Inline-flex boxes take the icon's edge as their baseline; centering on the line instead
+     keeps the badge from riding high inside text. */
+  vertical-align: middle;
 }
 
 /* Rounded just under the boxes' own radii so it nests into the card language; sized so the
@@ -385,8 +388,22 @@ button {
   border-top-color: var(--con);
 }
 
+/* The card header: the kicker names the claim, the author badge signs it on the right. */
+.focus-kicker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.focus-kicker-row .address {
+  font-size: 0.8rem;
+  color: var(--bark);
+}
+
 .focus-kicker {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -864,7 +881,7 @@ button {
   color: var(--con);
 }
 
-/* The bounty panel under the thesis: pool info plus top-up / claim / sweep, one quiet row. */
+/* The bounty actions under a finished thesis: claim / sweep, one quiet row. */
 .bounty-panel {
   display: flex;
   align-items: center;
@@ -873,21 +890,33 @@ button {
   margin: 0.75rem 0 0;
 }
 
-.bounty-topup {
+/* The top-up affordance: a small round plus right after the bounty figure. */
+.bounty-plus {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  /* Centers the circle on the cap height of the figure it follows ("… EURC +"): measured
+     against Public Sans' real metrics (caps 0.733em), not eyeballed - see the design log. */
+  vertical-align: -0.08em;
+  width: 1.4em;
+  height: 1.4em;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
 }
 
-.bounty-topup input {
-  font: inherit;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  width: 6.5rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--hairline);
-  border-radius: 0.5rem;
-  background: var(--card);
+.bounty-plus:hover {
+  border-color: var(--bark);
+  color: var(--ink);
+}
+
+.chip-glyph {
+  width: 0.9em;
+  height: 0.9em;
+  display: block;
 }
 
 /* The fixed unit tag beside an amount input (e.g. the bounty token symbol). */

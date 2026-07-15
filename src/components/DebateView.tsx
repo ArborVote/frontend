@@ -4,9 +4,8 @@ import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT }
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, thesisOf } from '../types';
-import { formatTokenAmount } from '../lib/tokens';
 import { AddressChip } from './AddressChip';
-import { BountyPanel } from './BountyPanel';
+import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
@@ -161,9 +160,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
-        <p className="focus-kicker">
-          {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
-        </p>
+        <div className="focus-kicker-row">
+          <p className="focus-kicker">
+            {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
+          </p>
+          {focus.creator && <AddressChip address={focus.creator} />}
+        </div>
         <h1 className="focus-text">
           <ContentText text={focus.text} digest={focus.contentDigest} />
         </h1>
@@ -181,13 +183,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         {isThesis ? (
           <p className="focus-meta">
             Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
-            {debate.bounty && (
-              <>
-                {' '}
-                · bounty{' '}
-                <strong className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</strong>
-              </>
-            )}
             {debate.phase !== 'finished' && focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}
@@ -195,10 +190,10 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
             )}
-            {focus.creator && (
+            {debate.bounty && (
               <>
                 {' '}
-                · created by <AddressChip address={focus.creator} />
+                · <BountyTopUpChip debate={debate} tx={tx} />
               </>
             )}
           </p>
@@ -215,12 +210,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 · sways parent{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
-            )}
-            {focus.creator && (
-              <>
-                {' '}
-                · created by <AddressChip address={focus.creator} />
-              </>
             )}{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>

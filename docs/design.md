@@ -56,6 +56,22 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — the author signs the card header, not the meta line.** The focus card's kicker row
+  is now `THESIS / PRO ARGUMENT … ← → author badge`: identity sits with the claim's label (as posts
+  carry their author up top elsewhere), and the meta line goes back to being a quiet row of figures.
+  Inline in the meta text, the 1.4em identicon rode above the baseline and inflated the line — a
+  badge is a block-ish thing and earns a block-ish seat. `.address-badge` also gained
+  `vertical-align: middle` for the places it still sits in text (browse rows). (North star,
+  principle 3's spirit: rows keep their rhythm.)
+- **2026-07-15 — the bounty top-up lives on the bounty figure.** The floating input+button strip
+  above the thesis card is gone; the thesis meta's `bounty 1 EURC` closes the line, followed by a
+  small round `+` button that opens the top-up modal (amount + `Top up EURC`). Principle 5 — the
+  affordance on the value it edits; the round box wraps only the plus (boxing the whole figure
+  read as a tag, not a value in the meta series). Unlike the settings modals this one is
+  transactional (explicit confirm button): a top-up is an irreversible donation, which is
+  principle 6's stated bar for Accept-style modals. Without a wallet, and once finished, the
+  figure renders as plain meta text (the claim panel owns the bounty from there).
+  (Principles 5, 6, 10.)
 - **2026-07-15 — one address badge everywhere: identicon + `0x1234…abcd`.** Accounts render through
   a single `AddressBadge` (blockies-style deterministic identicon plus the canonical truncation),
   composed by the copy chip and the wallet button — two competing truncations collapsed into the
